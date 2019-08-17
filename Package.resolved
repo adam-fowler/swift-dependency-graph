@@ -1,0 +1,34 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "async-http-client",
+        "repositoryURL": "https://github.com/swift-server/async-http-client",
+        "state": {
+          "branch": null,
+          "revision": "a42fe83781b5c4822e00706eaf6a4380b256be8a",
+          "version": "1.0.0-alpha.1"
+        }
+      },
+      {
+        "package": "swift-nio",
+        "repositoryURL": "https://github.com/apple/swift-nio.git",
+        "state": {
+          "branch": null,
+          "revision": "790827800d6af12ca6a8b1dca7a9072606fd2a1e",
+          "version": "2.7.0"
+        }
+      },
+      {
+        "package": "swift-nio-ssl",
+        "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
+        "state": {
+          "branch": null,
+          "revision": "f5dd7a60ff56f501ff7bf9be753e4b1875bfaf20",
+          "version": "2.4.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
