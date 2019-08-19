@@ -1,12 +1,10 @@
 [
+  "https://gitlab.com/Mordil/swift-redi-stack",
   "git@github.com:kandelvijaya/AlgorithmChecker.git",
   "https://github.com/amzn/smoke-aws-credentials.git",
-  "https://github.com/amzn/smoke-dynamodb.git",
   "https://github.com/amzn/smoke-framework.git",
   "https://github.com/apple/swift-llbuild.git",
-  "https://github.com/DuetHealth/Bedrock.git",
   "https://github.com/DuetHealth/DrX.git",
-  "https://github.com/swift-aws/aws-sdk-appleos.git",
   "https://github.com/swift-aws/aws-sdk-swift.git",
   "https://github.com/adam-fowler/swift-dependency-graph.git"
 ]
