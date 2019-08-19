@@ -1,4 +1,5 @@
 [
+  "git@github.com:kandelvijaya/AlgorithmChecker.git",
   "https://github.com/amzn/smoke-aws-credentials.git",
   "https://github.com/amzn/smoke-dynamodb.git",
   "https://github.com/amzn/smoke-framework.git",
