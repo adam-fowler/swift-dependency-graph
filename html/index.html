@@ -4,6 +4,24 @@
         <meta charset="UTF-8">
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <style src="https://fonts.googleapis.com/css?family=Lato:300,400"></style>
+        <style>
+            body {
+                font-size: 10px;
+                font-size: 1rem;
+                font-family: "Lato", sans-serif;
+                font-weight: 300;
+                background-color:#eee;
+            }
+            .packagetitle {
+                font-weight: 400;
+                min-width: 60px;
+            }
+            .packageowner {
+                font-weight: 300;
+                font-size: 90%;
+            }
+        </style>
         <script type="text/javascript">
             google.charts.load('current', {packages:["orgchart"]});
             google.charts.setOnLoadCallback(loadDependencies);
@@ -22,10 +40,17 @@
                        });
             }
 
-            function visibleName(name) {
+            function renderName(name) {
                 let split = name.split("/")
                 if (split.length >= 2) {
-                    return split[split.length-2] + " " + split[split.length-1]
+                    var html = []
+                    html.push("<div class='packagetitle'>")
+                    html.push(split[split.length-1])
+                    html.push("</div>")
+                    html.push("<div class='packageowner'>")
+                    html.push(split[split.length-2])
+                    html.push("</div>")
+                    return html.join("")
                 }
                 return name
             }
@@ -35,7 +60,7 @@
                     return
                 }
                 let root = dependencyData[rootName]
-                data.addRows(root[direction].map(function(name){return [visibleName(name), visibleName(rootName), name]}))
+                data.addRows(root[direction].map(function(name){return [{v:name, f:renderName(name)}, rootName, name]}))
                 for(entry in root[direction]) {
                     let rootName = root[direction][entry]
                     addRows(data, rootName, level-1)
@@ -50,7 +75,7 @@
                 data.addColumn('string', 'ToolTip');
 
                 let root = dependencyData[rootName]
-                data.addRows([[visibleName(rootName), "", rootName]]);
+                data.addRows([[{v:rootName, f:renderName(rootName)}, "", rootName]]);
                 addRows(data, rootName, 5)
 
                 // Create the chart.
@@ -60,7 +85,7 @@
 
                 google.visualization.events.addListener(chart, "select", function() {
                     let selection = chart.getSelection()
-                    let newRoot = data.getValue(selection[0].row, 2)
+                    let newRoot = data.getValue(selection[0].row, 0)
                     if (newRoot == rootName) {
                         if (direction == "on") { direction = "to" } else { direction = "on" }
                     } else {
