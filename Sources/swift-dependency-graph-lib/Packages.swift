@@ -25,13 +25,13 @@ public struct Package : Codable {
     
     public init(dependencies: [String]) {
         self.readPackageSwift = true
-        self.dependencies = Set<String>(dependencies)
+        self.dependencies = Set<String>(dependencies.map { Packages.cleanupName($0) })
         self.dependents = []
     }
     
     enum CodingKeys : String, CodingKey {
-        case dependencies = "dependencies"
-        case dependents = "dependents"
+        case dependencies = "on"
+        case dependents = "to"
     }
 }
 
@@ -58,16 +58,29 @@ public class Packages {
         
         for dependency in package.dependencies {
             guard Packages.isValidUrl(url: dependency) else { continue }
-            let name = Packages.cleanupName(dependency)
-            if packages[name] == nil {
-                packages[name] = Package()
+            let dependencyName = Packages.cleanupName(dependency)
+            if packages[dependencyName] == nil {
+                packages[dependencyName] = Package()
             }
-            packages[name]!.dependents.insert(name)
+            packages[dependencyName]!.dependents.insert(name)
         }
     }
     
     /// convert name from github/repository.git to github/repository/
     public static func cleanupName(_ packageName: String) -> String {
+        var packageName = packageName
+        if packageName.hasPrefix("git@github.com") {
+            var split = packageName.split(separator: "/", omittingEmptySubsequences: false)
+            let split2 = split[0].split(separator: ":")
+            //guard split2.count > 1 else {return nil}
+            // set user name
+            split[0] = split2[1]
+            split.insert("github.com", at:0)
+            split.insert("", at:0)
+            split.insert("https:", at:0)
+            packageName = split.joined(separator: "/")
+        }
+        
         if packageName.suffix(4) == ".git" {
             return String(packageName.prefix(packageName.count - 4))
         } else if packageName.last == "/" {
@@ -76,18 +89,10 @@ public class Packages {
         return packageName
     }
     
-    /// convert name from github/repository.git to github/repository/
-    public static func cleanupName(_ packageName: Substring) -> Substring {
-        if packageName.suffix(4) == ".git" {
-            return packageName.prefix(packageName.count - 4)
-        } else if packageName.last == "/" {
-            return packageName.dropLast()
-        }
-        return packageName
-    }
-    
     /// get package URL from github repository name
     static func getPackageUrl(url: String) -> String? {
+        let url = Packages.cleanupName(url)
+        
         // get Package.swift URL
         var split = url.split(separator: "/", omittingEmptySubsequences: false)
         if split.last == "" {
@@ -95,22 +100,9 @@ public class Packages {
         }
         
         // bloody trouble makers
-        if split[0].hasPrefix("git@github.com") {
-            let split2 = split[0].split(separator: ":")
-            guard split2.count > 1 else {return nil}
-            // set user name
-            split[0] = split2[1]
-            split.insert("raw.githubusercontent.com", at:0)
-            split.insert("", at:0)
-            split.insert("https:", at:0)
-        } else if split.count > 2 && split[2] == "github.com" {
+        if split.count > 2 && split[2] == "github.com" {
             split[2] = "raw.githubusercontent.com"
-        }
-        
-        let last = split.count - 1
-        split[last] = Packages.cleanupName(split[last])
-        
-        if split.count > 2 && split[2] == "gitlab.com" {
+        } else if split.count > 2 && split[2] == "gitlab.com" {
             split.append("raw")
         }
         
