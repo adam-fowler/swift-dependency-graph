@@ -29,6 +29,7 @@
             var direction = "to"
             var dependencyData
             var rootName = "https://github.com/apple/swift-nio"
+            var nodeId = 0
 
             function loadDependencies() {
                 $.ajax({
@@ -55,15 +56,17 @@
                 return name
             }
 
-            function addRows(data, rootName, level) {
+            function addRows(data, rootName, level, rootNameCount) {
+                nodeId += 1
                 if (level == 0) {
                     return
                 }
+                let nodeId2 = nodeId
                 let root = dependencyData[rootName]
-                data.addRows(root[direction].map(function(name){return [{v:name, f:renderName(name)}, rootName, name]}))
+                data.addRows(root[direction].map(function(name){return [{v:name+nodeId2, f:renderName(name)}, rootNameCount, name]}))
                 for(entry in root[direction]) {
                     let rootName = root[direction][entry]
-                    addRows(data, rootName, level-1)
+                    addRows(data, rootName, level-1, rootName+nodeId2)
                 }
 
             }
@@ -75,8 +78,9 @@
                 data.addColumn('string', 'ToolTip');
 
                 let root = dependencyData[rootName]
+                nodeCount = 0
                 data.addRows([[{v:rootName, f:renderName(rootName)}, "", rootName]]);
-                addRows(data, rootName, 5)
+                addRows(data, rootName, 5, rootName)
 
                 // Create the chart.
                 var chart = new google.visualization.OrgChart(document.getElementById('chart_div'));
@@ -85,7 +89,7 @@
 
                 google.visualization.events.addListener(chart, "select", function() {
                     let selection = chart.getSelection()
-                    let newRoot = data.getValue(selection[0].row, 0)
+                    let newRoot = data.getValue(selection[0].row, 2)
                     if (newRoot == rootName) {
                         if (direction == "on") { direction = "to" } else { direction = "on" }
                     } else {
