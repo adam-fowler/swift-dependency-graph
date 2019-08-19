@@ -1,15 +1,14 @@
 import XCTest
-@testable import swift_dependency_graph
+@testable import swift_dependency_graph_lib
 
 final class swift_dependency_graphTests: XCTestCase {
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-        XCTAssertEqual(swift_dependency_graph().text, "Hello, World!")
+    func testPackagesCleanupName() {
+        XCTAssertEqual(Packages.cleanupName("https://github.com/user/repository"), "https://github.com/user/repository/")
+        XCTAssertEqual(Packages.cleanupName("https://github.com/user/repository/"), "https://github.com/user/repository/")
+        XCTAssertEqual(Packages.cleanupName("https://github.com/user/repository.git"), "https://github.com/user/repository/")
     }
 
     static var allTests = [
-        ("testExample", testExample),
+        ("testPackagesCleanupName", testPackagesCleanupName),
     ]
 }
