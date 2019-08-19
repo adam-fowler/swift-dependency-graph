@@ -8,16 +8,17 @@
 import Foundation
 import NIO
 
-public struct Package {
+typealias Future = EventLoopFuture
+
+public struct Package : Codable {
     /// has the package been setup fully with its dependencies setup
-    public var readPackageSwift: Bool
+    public var readPackageSwift: Bool = false
     /// packages we are dependent on
     var dependencies: Set<String>
     /// packages dependent on us
     var dependents: Set<String>
     
     public init() {
-        self.readPackageSwift = false
         self.dependencies = []
         self.dependents = []
     }
@@ -26,6 +27,11 @@ public struct Package {
         self.readPackageSwift = true
         self.dependencies = Set<String>(dependencies)
         self.dependents = []
+    }
+    
+    enum CodingKeys : String, CodingKey {
+        case dependencies = "dependencies"
+        case dependents = "dependents"
     }
 }
 
@@ -65,6 +71,18 @@ public class Packages {
             return packageName+"/"
         }
         return packageName
+    }
+    
+    public func load(url: String) throws {
+        let loader = try PackageLoader { name, package in
+            self.add(name: name, package: package)
+        }
+        try loader.load(url: url, packages: self)
+    }
+    
+    public func save() throws {
+        let data = try JSONEncoder().encode(packages)
+        try data.write(to: URL(fileURLWithPath: "dependencies.json"))
     }
     
     let semaphore = DispatchSemaphore(value: 1)
