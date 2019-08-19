@@ -12,7 +12,7 @@ import AsyncHTTPClient
 
 public class HTTPLoader {
     enum HTTPError : Error {
-        case noPackageBody
+        case noPackageBody(String)
     }
     
     let eventLoopGroup : EventLoopGroup
@@ -29,8 +29,8 @@ public class HTTPLoader {
     
     public func getBody(url: String) -> EventLoopFuture<[UInt8]> {
         return get(url: url).flatMapThrowing { (response)->[UInt8] in
-            guard let body = response.body else {throw HTTPError.noPackageBody}
-            guard let bytes = body.getBytes(at: 0, length: body.readableBytes) else {throw HTTPError.noPackageBody}
+            guard let body = response.body else {throw HTTPError.noPackageBody(url)}
+            guard let bytes = body.getBytes(at: 0, length: body.readableBytes) else {throw HTTPError.noPackageBody(url)}
             return bytes
         }
     }

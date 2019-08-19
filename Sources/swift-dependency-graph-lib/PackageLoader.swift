@@ -29,13 +29,18 @@ class PackageLoader {
     }
     
     func load(url: String, packages: Packages) throws {
-        // get package names
-        packageNames = try httpLoader.getBody(url: url)
-            .flatMapThrowing { (buffer) throws -> [String] in
-                let packageNames = try JSONSerialization.jsonObject(with: Data(buffer), options: []) as? [String] ?? []
-                return packageNames
-            }.wait()
-        
+        if url.hasPrefix("http") {
+            // get package names
+            packageNames = try httpLoader.getBody(url: url)
+                .flatMapThrowing { (buffer) throws -> [String] in
+                    let data = Data(buffer)
+                    let names = try JSONSerialization.jsonObject(with: data, options: []) as? [String] ?? []
+                    return names
+                }.wait()
+        } else {
+            let data = try Data(contentsOf: URL(fileURLWithPath: url))
+            packageNames = try JSONSerialization.jsonObject(with: data, options: []) as? [String] ?? []
+        }
         // add packages to Package array
         while(packageNames.count > 0) {
             let added = addPackageIndex(index: 0)
@@ -46,16 +51,7 @@ class PackageLoader {
     }
     
     func addPackage(url: String) -> Future<Void> {
-        
-        // get Package.swift URL
-        var split = url.split(separator: "/", omittingEmptySubsequences: false)
-        if split[2] == "github.com" {
-            split[2] = "raw.githubusercontent.com"
-        }
-        let last = split.count - 1
-        split[last] = Packages.cleanupName(split[last])
-        split.append("master/Package.swift")
-        let packageUrl = split.joined(separator: "/")
+        guard let packageUrl = Packages.getPackageUrl(url: url) else { return eventLoopGroup.next().makeSucceededFuture(Void())}
         
         return httpLoader.getBody(url: packageUrl)
             .flatMap { [unowned self] buffer in
@@ -71,9 +67,9 @@ class PackageLoader {
         }
     }
     
-    func addPackageIndex(index: Int) -> Future<Bool> {
+    func addPackageIndex(index: Int) -> Future<Void> {
         if index >= packageNames.count {
-            return self.eventLoopGroup.next().makeSucceededFuture(true)
+            return self.eventLoopGroup.next().makeSucceededFuture(Void())
         }
         return addPackage(url: packageNames[index]).flatMap { return self.addPackageIndex(index: index+1) }
     }
