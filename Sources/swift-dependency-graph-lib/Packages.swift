@@ -68,7 +68,7 @@ public class Packages {
     
     /// convert name from github/repository.git to github/repository/
     public static func cleanupName(_ packageName: String) -> String {
-        var packageName = packageName
+        var packageName = packageName.lowercased()
         if packageName.hasPrefix("git@github.com") {
             var split = packageName.split(separator: "/", omittingEmptySubsequences: false)
             let split2 = split[0].split(separator: ":")
