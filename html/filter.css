@@ -1,5 +1,5 @@
 #filter {
-    width: 50%;
+    width: 66%;
     max-width: 500px;
     display: inline-block;
     position: relative;
@@ -11,7 +11,7 @@
   background-repeat: no-repeat; /* Do not repeat the icon image */
   width: 100%;
   box-sizing: border-box;
-  font-size: 16px; /* Increase font-size */
+  font-size: 100%; /* Increase font-size */
   padding: 12px 20px 12px 20px; /* Add some padding */
   border: 1px solid #ddd; /* Add a grey border */
   margin-bottom: 12px; /* Add some space below the input */
@@ -34,11 +34,22 @@
   background-color: #f6f6f6; /* Grey background color */
   padding: 12px 20px 12px 20px; /* Add some padding */
   text-decoration: none; /* Remove default text underline */
-  font-size: 16px; /* Increase the font-size */
+  font-size: 100%; /* Increase the font-size */
   color: black; /* Add a black text color */
   display: block; /* Make it into a block element to fill the whole list */
 }
 
 #filterList li:hover:not(.header) {
   background-color: #eee; /* Add a hover effect to all links, except for headers */
+}
+
+@media screen and (max-width: 480px) {
+    #filterInput {
+        padding: 6px 10px 6px 10px; /* Add some padding */
+        margin-bottom: 6px; /* Add some space below the input */
+    }
+    #filterList li {
+        padding: 6px 10px 6px 10px; /* Add some padding */
+        font-size: 90%;
+    }
 }

@@ -2,6 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
         <style src="https://fonts.googleapis.com/css?family=Lato:300,400"></style>
@@ -19,25 +20,56 @@
                 background-size: auto;
                 background-attachment: fixed;
             }
+            .chart-node {
+                text-align: center;
+                vertical-align: middle;
+                border: 1px solid #b5d9ea;
+                padding: 0;
+                -webkit-border-radius: 3px;
+                -webkit-box-shadow: rgba(0, 0, 0, 0.5) 3px 3px 3px;
+                background-color: #edf7ff;
+                background: -webkit-gradient(linear, left top, left bottom, from(#edf7ff), to(#cde7ee));
+            }
             .packagetitle {
                 font-weight: 400;
                 min-width: 60px;
             }
             .packageowner {
                 font-weight: 300;
-                font-size: 90%;
+                font-size: 70%;
             }
             #details {
                 position: absolute;
                 bottom: 20px;
                 left: 20px;
                 width: 300px;
+                max-width: 85%;
                 background-color: #ccc;
                 padding: 12px;
-                font-size: 14px;
+                font-size: 80%;
+            }
+            #minimize-button {
+                position: absolute;
+                display: block;
+                top: 5px;
+                right: 5px;
+                padding: 1px 2px 1px 2px; /* Add some padding */
+                border: 1px solid #000;
+                font-size: 60%;
             }
             #chart_div {
                 width: 100%;
+            }
+
+            @media screen and (max-width: 480px) {
+                body {
+                     font-size: 70%;
+                }
+                #details {
+                    bottom: 12px;
+                    left: 12px;
+                    padding: 8px;
+                }
             }
         </style>
         <script type="text/javascript">
@@ -57,7 +89,6 @@
                            let keys = Object.keys(dependencyData)
                            let filterNames = keys.map(function(name) {return displayName(name)})
                            setFilterListOptions(filterNames, keys, "selectRoot")
-                           drawChart();
                        }
                        });
             }
@@ -126,7 +157,7 @@
                 document.body.style.backgroundImage = `url(${backgroundImages[direction]})`
 
                 // Draw the chart, setting the allowHtml option to true for the tooltips.
-                chart.draw(data, {allowHtml:true});
+                chart.draw(data, {allowHtml:true, nodeClass:"chart-node"});
 
                 google.visualization.events.addListener(chart, "select", function() {
                     let selection = chart.getSelection()
@@ -135,12 +166,6 @@
                         if (direction == "on") { direction = "to" } else { direction = "on" }
                     } else {
                         rootName = newRoot
-                        if (direction == "on" && dependencyData[rootName].on.length == 0) {
-                            direction = "to"
-                        }
-                        if (direction == "to" && dependencyData[rootName].to.length == 0) {
-                            direction = "on"
-                        }
                     }
                     drawChart()
                 })
@@ -152,8 +177,8 @@
             <input type="text" id="filterInput" onkeyup="filterList()" placeholder="Search for packages..">
             <ul id="filterList"></ul>
         </div>
-        <div id="details">
-            <h2>Swift Dependency Graph</h2>
+        <div id="details" class="maximized">
+            <h3>Swift Dependency Graph</h3>
             <p>The swift dependency graph uses the Swift Package catalog from the <a href="https://swiftpm.co/">SwiftPMLibrary</a> setup by Dave Verwer.</p>
             <p>Start to type the name of a package in the search bar and select from the menu to display the package and its dependencies. Click on a node in the graph to make it the top node. Click on the top node to toggle between displaying a package's dependencies and displaying the packages dependent on it.</p>
             <p>The arrow in the background indicates whether you are displaying dependents or dependencies. The arrow always points in the direction of the parent package.
