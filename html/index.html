@@ -27,6 +27,15 @@
                 font-weight: 300;
                 font-size: 90%;
             }
+            #details {
+                position: absolute;
+                bottom: 20px;
+                left: 20px;
+                width: 300px;
+                background-color: #ccc;
+                padding: 12px;
+                font-size: 14px;
+            }
             #chart_div {
                 width: 100%;
             }
@@ -35,7 +44,7 @@
             google.charts.load('current', {packages:["orgchart"]});
             google.charts.setOnLoadCallback(loadDependencies);
 
-            var direction = "to"
+            var direction = "on"
             var dependencyData
             var rootName = ""
             var nodeId = 0
@@ -55,6 +64,7 @@
 
             function selectRoot(name) {
                 rootName = name
+                direction = "on"
                 hideFilterList()
                 drawChart()
             }
@@ -112,7 +122,7 @@
                 var chart = new google.visualization.OrgChart(document.getElementById('chart_div'));
 
                 // set background
-                var backgroundImages = {"to" : "images/solid-arrow-circle-up.svg", "on" : "images/solid-arrow-circle-down.svg"}
+                var backgroundImages = {"to" : "images/solid-arrow-circle-down.svg", "on" : "images/solid-arrow-circle-up.svg"}
                 document.body.style.backgroundImage = `url(${backgroundImages[direction]})`
 
                 // Draw the chart, setting the allowHtml option to true for the tooltips.
@@ -141,6 +151,12 @@
         <div id="filter">
             <input type="text" id="filterInput" onkeyup="filterList()" placeholder="Search for packages..">
             <ul id="filterList"></ul>
+        </div>
+        <div id="details">
+            <h2>Swift Dependency Graph</h2>
+            <p>The swift dependency graph uses the Swift Package catalog from the <a href="https://swiftpm.co/">SwiftPMLibrary</a> setup by Dave Verwer.</p>
+            <p>Start to type the name of a package in the search bar and select from the menu to display the package and its dependencies. Click on a node in the graph to make it the top node. Click on the top node to toggle between displaying a package's dependencies and displaying the packages dependent on it.</p>
+            <p>The arrow in the background indicates whether you are displaying dependents or dependencies. The arrow always points in the direction of the parent package.
         </div>
         <div id="chart_div"></div>
     </body>
