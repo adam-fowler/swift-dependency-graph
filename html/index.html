@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-32652209-5"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'UA-32652209-5');
+        </script>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
@@ -51,7 +60,6 @@
             }
             /* override google-visualization-orgchart-table styles for links and images */
             .google-visualization-orgchart-table a {
-                margin: initial;
                 padding: 0px;
             }
             .google-visualization-orgchart-table img {
@@ -221,7 +229,8 @@
             <h3>Swift Dependency Graph</h3>
             <p>The swift dependency graph uses the Swift Package catalog from the <a href="https://swiftpm.co/">SwiftPMLibrary</a> setup by Dave Verwer.</p>
             <p>Start to type the name of a package in the search bar and select from the menu to display the package and its dependencies. Click on a node in the graph to make it the top node. Click on the top node to toggle between displaying a package's dependencies and displaying the packages dependent on it.</p>
-            <p>The arrow in the background indicates whether you are displaying dependents or dependencies. The arrow always points in the direction of the parent package.
+            <p>The arrow in the background indicates whether you are displaying dependents or dependencies. The arrow always points in the direction of the parent package.</p>
+            <p>The swift dependency graph is written by <a href="https://github.com/adam-fowler">Adam Fowler</a>.</p>
         </div>
         <div id="chart_div"></div>
     </body>
