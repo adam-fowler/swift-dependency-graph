@@ -23,6 +23,9 @@
                 font-weight: 300;
                 font-size: 90%;
             }
+            #chart_div {
+                width: 100%;
+            }
         </style>
         <script type="text/javascript">
             google.charts.load('current', {packages:["orgchart"]});
@@ -126,9 +129,10 @@
         </script>
     </head>
     <body>
-        <input type="text" id="filterInput" onkeyup="filterList()" placeholder="Search for packages..">
-        <ul id="filterList">
-        </ul>
+        <div id="filter">
+            <input type="text" id="filterInput" onkeyup="filterList()" placeholder="Search for packages..">
+            <ul id="filterList"></ul>
+        </div>
         <div id="chart_div"></div>
     </body>
 </html>
