@@ -21,7 +21,7 @@
                 background-attachment: fixed;
             }
             .chart-node {
-                text-align: center;
+                text-align: left;
                 vertical-align: middle;
                 border: 1px solid #b5d9ea;
                 padding: 0;
@@ -38,6 +38,26 @@
                 font-weight: 300;
                 font-size: 70%;
             }
+            .packagelink {
+                /*position: relative;
+                display: block;
+                width: 16px;
+                height: 16px;
+                top: 2px;
+                right: 2px;*/
+            }
+            .packagelink img {
+                vertical-align: middle;
+            }
+            /* override google-visualization-orgchart-table styles for links and images */
+            .google-visualization-orgchart-table a {
+                margin: initial;
+                padding: 0px;
+            }
+            .google-visualization-orgchart-table img {
+                padding: 0px;
+            }
+
             #details {
                 position: absolute;
                 bottom: 20px;
@@ -112,12 +132,9 @@
                 let split = name.split("/")
                 if (split.length >= 2) {
                     var html = []
-                    html.push("<div class='packagetitle'>")
-                    html.push(split[split.length-1])
-                    html.push("</div>")
-                    html.push("<div class='packageowner'>")
-                    html.push(split[split.length-2])
-                    html.push("</div>")
+                    html.push(`<div class='packagetitle'>${split[split.length-1]}</div>`)
+                    html.push(`<div class='packageowner'>${split[split.length-2]}`)
+                    html.push(`<a class='packagelink' href='${name}'><img src='images/pagelink.svg'/></a></div>`)
                     return html.join("")
                 }
                 return name
