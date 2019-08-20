@@ -94,14 +94,51 @@
         </style>
         <script type="text/javascript">
             google.charts.load('current', {packages:["orgchart"]});
+            google.charts.setOnLoadCallback(createChart);
             google.charts.setOnLoadCallback(loadDependencies);
 
+            var chart
+            var chart_data
             var direction = "on"
             var dependencyData
             var rootName = ""
             var nodeId = 0
 
+            function createChart() {
+                // Create the chart.
+                let container = document.getElementById('chart_div')
+                chart = new google.visualization.OrgChart(container);
+
+                container.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (e.target.tagName.toUpperCase() === 'A') {
+                        chart.setSelection([]);
+                        location.href = e.target.href;
+                        drawChart()
+                    } else if (e.target.parentElement.tagName.toUpperCase() === 'A') {
+                        chart.setSelection([]);
+                        location.href = e.target.parentElement.href;
+                        drawChart()
+                    } else {
+                        let selection = chart.getSelection()
+                        if (selection.length == 0) {
+                            return
+                        }
+                        let newRoot = chart_data.getValue(selection[0].row, 2)
+                        if (newRoot == rootName) {
+                            if (direction == "on") { direction = "to" } else { direction = "on" }
+                        } else {
+                            rootName = newRoot
+                        }
+                        chart.setSelection([]);
+                        drawChart()
+                    }
+                }, false);
+
+            }
+
             function loadDependencies() {
+                console.log("LOADING")
                 $.ajax({
                        url : "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/master/dependencies.json",
                        success : function (data) {
@@ -155,37 +192,23 @@
 
             }
             function drawChart() {
-                var data = new google.visualization.DataTable();
+                chart_data = new google.visualization.DataTable();
 
-                data.addColumn('string', 'Name');
-                data.addColumn('string', 'Parent');
-                data.addColumn('string', 'ToolTip');
+                chart_data.addColumn('string', 'Name');
+                chart_data.addColumn('string', 'Parent');
+                chart_data.addColumn('string', 'ToolTip');
 
                 let root = dependencyData[rootName]
                 nodeCount = 0
-                data.addRows([[{v:rootName, f:renderName(rootName)}, "", rootName]]);
-                addRows(data, rootName, 5, rootName)
-
-                // Create the chart.
-                var chart = new google.visualization.OrgChart(document.getElementById('chart_div'));
+                chart_data.addRows([[{v:rootName, f:renderName(rootName)}, "", rootName]]);
+                addRows(chart_data, rootName, 5, rootName)
 
                 // set background
                 var backgroundImages = {"to" : "images/solid-arrow-circle-down.svg", "on" : "images/solid-arrow-circle-up.svg"}
                 document.body.style.backgroundImage = `url(${backgroundImages[direction]})`
 
                 // Draw the chart, setting the allowHtml option to true for the tooltips.
-                chart.draw(data, {allowHtml:true, nodeClass:"chart-node"});
-
-                google.visualization.events.addListener(chart, "select", function() {
-                    let selection = chart.getSelection()
-                    let newRoot = data.getValue(selection[0].row, 2)
-                    if (newRoot == rootName) {
-                        if (direction == "on") { direction = "to" } else { direction = "on" }
-                    } else {
-                        rootName = newRoot
-                    }
-                    drawChart()
-                })
+                chart.draw(chart_data, {allowHtml:true, nodeClass:"chart-node", selectedNodeClass:"chart-node"});
             }
         </script>
     </head>
