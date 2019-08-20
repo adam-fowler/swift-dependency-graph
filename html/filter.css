@@ -20,7 +20,7 @@
 #filterList {
   /* Remove default list styling */
   list-style-type: none;
-  width: 100%; /* Full-width */
+  min-width: 100%; /* Full-width */
   padding: 0;
   margin: 0;
   display: block;
