@@ -8,7 +8,7 @@ let rootPath = #file.split(separator: "/", omittingEmptySubsequences: false).dro
 let url = "https://raw.githubusercontent.com/daveverwer/SwiftPMLibrary/master/packages.json"
 
 do {
-    try packages.load(url: url)
+    try packages.import(url: url)
     try packages.save(filename: rootPath + "/dependencies.json")
 } catch {
     print(error)

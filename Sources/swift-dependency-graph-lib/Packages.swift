@@ -122,7 +122,7 @@ public class Packages {
         return false
     }
     
-    public func load(url: String) throws {
+    public func `import`(url: String) throws {
         let loader = try PackageLoader { name, package in
             self.add(name: name, package: package)
         }
