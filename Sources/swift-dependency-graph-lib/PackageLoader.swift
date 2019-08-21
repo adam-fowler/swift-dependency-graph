@@ -34,7 +34,9 @@ class PackageLoader {
             packageNames = try httpLoader.getBody(url: url)
                 .flatMapThrowing { (buffer) throws -> [String] in
                     let data = Data(buffer)
-                    let names = try JSONSerialization.jsonObject(with: data, options: []) as? [String] ?? []
+                    var names = try JSONSerialization.jsonObject(with: data, options: []) as? [String] ?? []
+                    // append self to the list
+                    names.append("https://github.com/adam-fowler/swift-dependency-graph.git")
                     return names
                 }.wait()
         } else {
