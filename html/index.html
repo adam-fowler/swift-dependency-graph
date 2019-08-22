@@ -102,14 +102,13 @@
         </style>
         <script type="text/javascript">
             google.charts.load('current', {packages:["orgchart"]});
-            google.charts.setOnLoadCallback(createChart);
             google.charts.setOnLoadCallback(loadDependencies);
 
             var chart
             var chart_data
             var direction = "on"
             var dependencyData
-            var rootName = ""
+            var rootName = "https://github.com/adam-fowler/swift-dependency-graph"
             var nodeId = 0
 
             function createChart() {
@@ -139,14 +138,13 @@
                             rootName = newRoot
                         }
                         chart.setSelection([]);
-                        drawChart()
+                        drawChart();
                     }
                 }, false);
 
             }
 
             function loadDependencies() {
-                console.log("LOADING")
                 $.ajax({
                        url : "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/master/dependencies.json",
                        success : function (data) {
@@ -154,12 +152,15 @@
                            let keys = Object.keys(dependencyData)
                            let filterNames = keys.map(function(name) {return displayName(name)})
                            setFilterListOptions(filterNames, keys, "selectRoot")
+                           createChart();
+                           drawChart()
                        }
                        });
             }
 
             function selectRoot(name) {
                 rootName = name
+                gtag('event', 'view_package', {'event_label' : rootName})
                 direction = "on"
                 hideFilterList()
                 drawChart()
