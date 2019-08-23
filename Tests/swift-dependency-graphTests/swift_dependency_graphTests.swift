@@ -91,10 +91,11 @@ final class swift_dependency_graphTests: XCTestCase {
                 .joined(separator:"/")
             let packages = Packages()
             try packages.import(url: rootFolder + "/packages.json", iterations: 4)
-            
+
             XCTAssertNotNil(packages.packages["https://github.com/adam-fowler/swift-dependency-graph"])
             XCTAssertNotNil(packages.packages["https://github.com/apple/swift-package-manager"])
             XCTAssertNotNil(packages.packages["https://github.com/apple/swift-llbuild"])
+            XCTAssertNotNil(packages.packages["https://github.com/flinesoft/anymenu"]?.error)
         }
     }
     
