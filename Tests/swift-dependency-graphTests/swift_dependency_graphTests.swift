@@ -59,11 +59,11 @@ final class swift_dependency_graphTests: XCTestCase {
             try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/vapor/json.git").wait()
         }
     }
-    /*func testLoadPackageV5_1Test() {
+    func testLoadPackageV5_1Test() {
         attempt {
             try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/freak4pc/combinecocoa.git").wait()
         }
-    }*/
+    }
     
     /*func testLoadNonMasterPackageTest() {
         attempt {
@@ -73,6 +73,7 @@ final class swift_dependency_graphTests: XCTestCase {
     
     func testLoadErroringPackage() {
         attempt {
+            //
             // Package.swift on master branch is corrupt but release branch version is fine
             //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/httpswift/swifter.git").wait()
             // empty Package

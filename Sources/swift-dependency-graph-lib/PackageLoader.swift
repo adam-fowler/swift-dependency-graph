@@ -76,11 +76,15 @@ class PackageLoader {
         guard let packageV4Url = Packages.getPackageUrl(url: url, version: "4") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
         var packageUrlToLoad = packageV5Url
         
+        // Look into getting versions
+        // git ls-remote --tags <repository>. Checkout GitRepositoryProvider, 
+        
         // Order of loading is
         // - Package@swift-5.swift
         // - Package.swift
         // - Package@swift-4.2.swift
         // - Package@swift-4.swift
+        var errorPassedDown : Error? = nil
         return httpLoader.getBody(url: packageV5Url)
             .flatMapError { (error)->Future<[UInt8]> in
                 packageUrlToLoad = packageUrl
@@ -92,6 +96,7 @@ class PackageLoader {
                 }
             }
             .flatMapError { (error)->Future<[String]> in
+                errorPassedDown = error
                 packageUrlToLoad = packageV4_2Url
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
@@ -108,6 +113,9 @@ class PackageLoader {
                             return try self.manifestLoader.load(buffer, url: packageUrlToLoad, versions: [.v4])
                         }
                 }
+            }
+            .flatMapErrorThrowing { error in
+                throw errorPassedDown ?? error
             }
             .map { buffer in
                 print("Adding \(url)")
