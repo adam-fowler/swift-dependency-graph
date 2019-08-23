@@ -72,24 +72,53 @@ class PackageLoader {
     func addPackage(url: String) -> Future<Void> {
         guard let packageUrl = Packages.getPackageUrl(url: url) else { return eventLoopGroup.next().makeSucceededFuture(Void())}
         guard let packageV5Url = Packages.getPackageUrl(url: url, version: "5") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
+        guard let packageV4_2Url = Packages.getPackageUrl(url: url, version: "4.2") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
+        guard let packageV4Url = Packages.getPackageUrl(url: url, version: "4") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
         var packageUrlToLoad = packageV5Url
         
+        // Order of loading is
+        // - Package@swift-5.swift
+        // - Package.swift
+        // - Package@swift-4.2.swift
+        // - Package@swift-4.swift
         return httpLoader.getBody(url: packageV5Url)
             .flatMapError { (error)->Future<[UInt8]> in
                 packageUrlToLoad = packageUrl
-                return self.httpLoader.getBody(url: packageUrl)
+                return self.httpLoader.getBody(url: packageUrlToLoad)
             }
-            .flatMap { buffer in
-                self.eventLoopGroup.next().submit {
+            .flatMap { (buffer)->Future<[String]> in
+                return self.eventLoopGroup.next().submit {
                     return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
-                    }
+                }
+            }
+            .flatMapError { (error)->Future<[String]> in
+                packageUrlToLoad = packageV4_2Url
+                return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
-                        self.eventLoopGroup.next().submit {
-                            print("Adding \(url)")
-                            self.onAdd(url, Package(dependencies: buffer))
+                        return self.eventLoopGroup.next().submit {
+                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad, versions: [.v4, .v4_2])
                         }
                 }
+            }
+            .flatMapError { (error)->Future<[String]> in
+                packageUrlToLoad = packageV4Url
+                return self.httpLoader.getBody(url: packageUrlToLoad)
+                    .flatMap { buffer in
+                        return self.eventLoopGroup.next().submit {
+                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad, versions: [.v4])
+                        }
+                }
+            }
+            .map { buffer in
+                print("Adding \(url)")
+                self.onAdd(url, Package(dependencies: buffer))
         }
+        /*.flatMap { buffer in
+         self.eventLoopGroup.next().submit {
+         print("Adding \(url)")
+         self.onAdd(url, Package(dependencies: buffer))
+                }
+        }*/
     }
 }
 
@@ -98,29 +127,26 @@ public class PackageManifestLoader {
         self.userToolchain = try UserToolchain(destination: Destination.hostDestination(AbsolutePath("/Library/Developer/CommandLineTools/usr/bin/")))
     }
     
-    public func load(_ buffer: [UInt8], url: String) throws -> [String] {
+    public func load(_ buffer: [UInt8], url: String, versions: [ManifestVersion] = [.v4,.v4_2,.v5]) throws -> [String] {
+        var versions = versions
         let diagnostics = DiagnosticsEngine()
         let fs = InMemoryFileSystem()
         try fs.writeFileContents(AbsolutePath("/Package.swift"), bytes: ByteString(buffer))
         
         print("Loading manifest from \(url)")
         
-        let manifest : Manifest
-        do {
-            manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v5, fileSystem: fs, diagnostics: diagnostics)
-        } catch {
+        while(true) {
             do {
-                manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v4_2, fileSystem: fs, diagnostics: diagnostics)
+                guard let version = versions.last else {throw PackageLoaderError.invalidManifest}
+                let manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: version, fileSystem: fs, diagnostics: diagnostics)
+                let dependencies = manifest.dependencies.map {$0.url}
+                return dependencies
+            } catch PackageLoaderError.invalidManifest {
+                throw PackageLoaderError.invalidManifest
             } catch {
-                do {
-                    manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v4, fileSystem: fs, diagnostics: diagnostics)
-                } catch PackageLoading.ManifestParseError.invalidManifestFormat {
-                    throw PackageLoaderError.invalidManifest
-                }
+                versions = versions.dropLast()
             }
         }
-        let dependencies = manifest.dependencies.map {$0.url}
-        return dependencies
     }
     
     let userToolchain : UserToolchain

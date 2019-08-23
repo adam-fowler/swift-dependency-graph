@@ -53,11 +53,12 @@ final class swift_dependency_graphTests: XCTestCase {
     }
     
     // invalid manifest (trying to load Package.swift when it is for swift 3)
-    /*func testLoadPackageSwiftV4Test() {
+    func testLoadPackageSwiftV4Test() {
         attempt {
             try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/jdhealy/prettycolors").wait()
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/vapor/json.git").wait()
         }
-    }*/
+    }
     /*func testLoadPackageV5_1Test() {
         attempt {
             try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/freak4pc/combinecocoa.git").wait()
@@ -74,12 +75,6 @@ final class swift_dependency_graphTests: XCTestCase {
         attempt {
             // Package.swift on master branch is corrupt but release branch version is fine
             //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/httpswift/swifter.git").wait()
-            // weird order of loading, there is a 4.0 and a standard
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/vapor/json.git").wait()
-            // ditto
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/vapor/node").wait()
-            //version 3.1
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/vzsg/ed25519").wait()
             // empty Package
             //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/dentelezhkin/dwifft").wait()
             // no master branch but there is a release with package available
