@@ -120,11 +120,11 @@
                     e.preventDefault();
                     if (e.target.tagName.toUpperCase() === 'A') {
                         chart.setSelection([]);
-                        location.href = e.target.href;
+                        window.open(e.target.href, "_blank");
                         drawChart()
                     } else if (e.target.parentElement.tagName.toUpperCase() === 'A') {
                         chart.setSelection([]);
-                        location.href = e.target.parentElement.href;
+                        window.open(e.target.parentElement.href, "_blank");
                         drawChart()
                     } else {
                         let selection = chart.getSelection()
