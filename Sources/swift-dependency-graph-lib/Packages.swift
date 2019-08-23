@@ -17,6 +17,11 @@ public struct Package : Codable {
     var dependencies: Set<String>
     /// packages dependent on us
     var dependents: Set<String>
+    /// error
+    var error : String? {
+        // if setting an error the package must have been read
+        didSet { readPackageSwift = true}
+    }
     
     public init() {
         self.dependencies = []
@@ -32,6 +37,7 @@ public struct Package : Codable {
     enum CodingKeys : String, CodingKey {
         case dependencies = "on"
         case dependents = "to"
+        case error = "error"
     }
 }
 
@@ -40,7 +46,7 @@ public class Packages {
     
     public init() {}
     
-    // add a package
+    /// add a package
     public func add(name: String, package: Package) {
         let name = Packages.cleanupName(name)
         semaphore.wait()
@@ -63,6 +69,37 @@ public class Packages {
                 packages[dependencyName] = Package()
             }
             packages[dependencyName]!.dependents.insert(name)
+        }
+    }
+    
+    /// set loading package failed
+    public func addLoadingError(name: String, error: Error) {
+        let name = Packages.cleanupName(name)
+        semaphore.wait()
+        defer {
+            semaphore.signal()
+        }
+        
+        // if package already exists
+        let error = Packages.stringFromError(error)
+        if packages[name] != nil {
+            packages[name]?.error = error
+        } else {
+            var package = Package()
+            package.error = error
+            packages[name] = package
+        }
+    }
+    
+    /// convert error to string
+    static func stringFromError(_ error: Error) -> String {
+        switch error {
+        case PackageLoaderError.invalidManifest:
+            return "InvalidManifest"
+        case HTTPLoader.HTTPError.failedToLoad(_):
+            return "FailedToLoad"
+        default:
+            return "Unknown"
         }
     }
     
@@ -125,11 +162,28 @@ public class Packages {
         return false
     }
     
-    public func `import`(url: String) throws {
-        let loader = try PackageLoader { name, package in
+    public func `import`(url: String, iterations : Int = 100) throws {
+        let loader = try PackageLoader(onAdd: { name, package in
             self.add(name: name, package: package)
-        }
-        try loader.load(url: url, packages: self)
+        }, onError: { name, error in
+            print("Failed to load package from \(name)")
+            self.addLoadingError(name: name, error: error)
+        })
+
+        // Load package names from url
+        var packageNames = try loader.load(url: url, packages: self)
+        
+        var iterations = iterations
+        repeat {
+            try loader.loadPackages(packageNames).wait()
+            
+            // verify we havent got stuck in a loop
+            iterations -= 1
+            guard iterations > 0 else { throw PackageLoaderError.looping }
+
+            // create new list of packages containing packages that haven't been loaded
+            packageNames = packages.compactMap {return !$0.value.readPackageSwift ? $0.key : nil}
+        } while(packageNames.count > 0)
     }
     
     public func save(filename: String) throws {

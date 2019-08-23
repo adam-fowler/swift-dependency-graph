@@ -9,27 +9,35 @@ import Foundation
 import NIO
 import Basic
 import Workspace
+import PackageLoading
 import PackageModel
+
+enum PackageLoaderError : Error {
+    case invalidManifest
+    case looping
+}
+
 
 class PackageLoader {
     
     let manifestLoader : PackageManifestLoader
     let eventLoopGroup : EventLoopGroup
     let httpLoader : HTTPLoader
-    let addPackage : (String, Package)->()
-    var packageNames : [String] = []
+    let onAdd : (String, Package)->()
+    let onError : (String, Error)->()
 
-    init(addPackage: @escaping (String, Package)->()) throws {
+    init(onAdd: @escaping (String, Package)->(), onError: @escaping (String, Error)->() = {_,_ in }) throws {
         self.manifestLoader = try PackageManifestLoader()
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         self.httpLoader = HTTPLoader(eventLoopGroup: eventLoopGroup)
-        self.addPackage = addPackage
+        self.onAdd = onAdd
+        self.onError = onError
     }
     
-    func load(url: String, packages: Packages) throws {
+    func load(url: String, packages: Packages) throws -> [String] {
         if url.hasPrefix("http") {
             // get package names
-            packageNames = try httpLoader.getBody(url: url)
+            return try httpLoader.getBody(url: url)
                 .flatMapThrowing { (buffer) throws -> [String] in
                     let data = Data(buffer)
                     var names = try JSONSerialization.jsonObject(with: data, options: []) as? [String] ?? []
@@ -39,17 +47,28 @@ class PackageLoader {
                 }.wait()
         } else {
             let data = try Data(contentsOf: URL(fileURLWithPath: url))
-            packageNames = try JSONSerialization.jsonObject(with: data, options: []) as? [String] ?? []
-        }
-        // add packages to Package array
-        while(packageNames.count > 0) {
-            let added = addPackageIndex(index: 0)
-            _ = try added.wait()
-            // create new list of packages containing packages that haven't been loaded
-            packageNames = packages.packages.compactMap {return !$0.value.readPackageSwift ? $0.key : nil}
+            return try JSONSerialization.jsonObject(with: data, options: []) as? [String] ?? []
         }
     }
     
+    func loadPackages(_ packages: [String]) -> Future<Void> {
+        func addStartingFrom(index: Int) -> Future<Void> {
+            if index >= packages.count {
+                return self.eventLoopGroup.next().makeSucceededFuture(Void())
+            }
+            let name = packages[index]
+            return addPackage(url: name)
+                .flatMapError { (error)->Future<Void> in
+                    self.onError(name, error)
+                    return self.eventLoopGroup.next().makeSucceededFuture(Void())
+                }
+                .flatMap {
+                    return addStartingFrom(index: index+1)
+            }
+        }
+        return addStartingFrom(index: 0)
+    }
+
     func addPackage(url: String) -> Future<Void> {
         guard let packageUrl = Packages.getPackageUrl(url: url) else { return eventLoopGroup.next().makeSucceededFuture(Void())}
         guard let packageV5Url = Packages.getPackageUrl(url: url, version: "5") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
@@ -67,23 +86,9 @@ class PackageLoader {
                     .flatMap { buffer in
                         self.eventLoopGroup.next().submit {
                             print("Adding \(url)")
-                            self.addPackage(url, Package(dependencies: buffer))
+                            self.onAdd(url, Package(dependencies: buffer))
                         }
                 }
-        }
-    }
-    
-    func addPackageIndex(index: Int) -> Future<Void> {
-        if index >= packageNames.count {
-            return self.eventLoopGroup.next().makeSucceededFuture(Void())
-        }
-        return addPackage(url: packageNames[index])
-            .flatMapError { (error)->Future<Void> in
-                print("Failed to load package from \(self.packageNames[index])")
-                return self.eventLoopGroup.next().makeSucceededFuture(Void())
-            }
-            .flatMap {
-                return self.addPackageIndex(index: index+1)
         }
     }
 }
@@ -104,7 +109,15 @@ public class PackageManifestLoader {
         do {
             manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v5, fileSystem: fs, diagnostics: diagnostics)
         } catch {
-            manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v4, fileSystem: fs, diagnostics: diagnostics)
+            do {
+                manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v4_2, fileSystem: fs, diagnostics: diagnostics)
+            } catch {
+                do {
+                    manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v4, fileSystem: fs, diagnostics: diagnostics)
+                } catch PackageLoading.ManifestParseError.invalidManifestFormat {
+                    throw PackageLoaderError.invalidManifest
+                }
+            }
         }
         let dependencies = manifest.dependencies.map {$0.url}
         return dependencies
