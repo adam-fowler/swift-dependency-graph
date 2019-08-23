@@ -120,10 +120,12 @@
                     e.preventDefault();
                     if (e.target.tagName.toUpperCase() === 'A') {
                         chart.setSelection([]);
+                        gtag('event', 'view_link', {'event_label' : e.target.href})
                         window.open(e.target.href, "_blank");
                         drawChart()
                     } else if (e.target.parentElement.tagName.toUpperCase() === 'A') {
                         chart.setSelection([]);
+                        gtag('event', 'view_link', {'event_label' : e.target.parentElement.href})
                         window.open(e.target.parentElement.href, "_blank");
                         drawChart()
                     } else {
