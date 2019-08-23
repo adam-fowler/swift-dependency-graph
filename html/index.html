@@ -133,7 +133,8 @@
                         if (selection.length == 0) {
                             return
                         }
-                        let newRoot = chart_data.getValue(selection[0].row, 2)
+                        let newRoot = chart_data.getValue(selection[0].row, 0).split('#')[0]
+
                         if (newRoot == rootName) {
                             if (direction == "on") { direction = "to" } else { direction = "on" }
                         } else {
@@ -188,6 +189,18 @@
                 return name
             }
 
+            function tooltipForName(name) {
+                let node = dependencyData[name]
+                if (node.error === "FailedToLoad") {
+                    return `${name}\nDependencies unavailable. Cannot find a Package.swift on the 'master' branch`
+                } else if(node.error === "InvalidManifest") {
+                    return `${name}\nDependencies unavailable. Failed to load Package.swift.\nEither it is corrupt or is an unsupported version.\nVersions supported range from 4.0 to 5.0.`
+                } else if(node.error === "Unknown") {
+                    return `${name}\nDependencies unavailable. Failed to load Package.swift`
+                }
+                return name
+            }
+
             function addRows(data, rootName, level, rootNameCount) {
                 nodeId += 1
                 if (level == 0) {
@@ -195,10 +208,10 @@
                 }
                 let nodeId2 = nodeId
                 let root = dependencyData[rootName]
-                data.addRows(root[direction].map(function(name){return [{v:name+nodeId2, f:renderName(name)}, rootNameCount, name]}))
+                data.addRows(root[direction].map(function(name){return [{v:`${name}#${nodeId2}`, f:renderName(name)}, rootNameCount, tooltipForName(name)]}))
                 for(entry in root[direction]) {
                     let rootName = root[direction][entry]
-                    addRows(data, rootName, level-1, rootName+nodeId2)
+                    addRows(data, rootName, level-1, `${rootName}#${nodeId2}`)
                 }
 
             }
@@ -211,7 +224,7 @@
 
                 let root = dependencyData[rootName]
                 nodeCount = 0
-                chart_data.addRows([[{v:rootName, f:renderName(rootName)}, "", rootName]]);
+                chart_data.addRows([[{v:rootName, f:renderName(rootName)}, "", tooltipForName(rootName)]]);
                 addRows(chart_data, rootName, 5, rootName)
 
                 // set background
