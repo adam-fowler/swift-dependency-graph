@@ -66,7 +66,7 @@ public class Packages {
         }
     }
     
-    /// convert name from github/repository.git to github/repository/
+    /// convert name from github/repository.git to github/repository
     public static func cleanupName(_ packageName: String) -> String {
         var packageName = packageName.lowercased()
         if packageName.hasPrefix("git@github.com") {
@@ -90,7 +90,7 @@ public class Packages {
     }
     
     /// get package URL from github repository name
-    static func getPackageUrl(url: String) -> String? {
+    static func getPackageUrl(url: String, version: String? = nil) -> String? {
         let url = Packages.cleanupName(url)
         
         // get Package.swift URL
@@ -99,14 +99,17 @@ public class Packages {
             split = split.dropLast()
         }
         
-        // bloody trouble makers
         if split.count > 2 && split[2] == "github.com" {
             split[2] = "raw.githubusercontent.com"
         } else if split.count > 2 && split[2] == "gitlab.com" {
             split.append("raw")
         }
         
-        split.append("master/Package.swift")
+        if let version = version {
+            split.append("master/Package@swift-\(version).swift")
+        } else {
+            split.append("master/Package.swift")
+        }
         
         return split.joined(separator: "/")
     }

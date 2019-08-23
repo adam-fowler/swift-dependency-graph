@@ -8,10 +8,8 @@
 import Foundation
 import NIO
 import Basic
-import PackageGraph
-import PackageLoading
-import PackageModel
 import Workspace
+import PackageModel
 
 class PackageLoader {
     
@@ -54,11 +52,17 @@ class PackageLoader {
     
     func addPackage(url: String) -> Future<Void> {
         guard let packageUrl = Packages.getPackageUrl(url: url) else { return eventLoopGroup.next().makeSucceededFuture(Void())}
+        guard let packageV5Url = Packages.getPackageUrl(url: url, version: "5") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
+        var packageUrlToLoad = packageV5Url
         
-        return httpLoader.getBody(url: packageUrl)
-            .flatMap { [unowned self] buffer in
+        return httpLoader.getBody(url: packageV5Url)
+            .flatMapError { (error)->Future<[UInt8]> in
+                packageUrlToLoad = packageUrl
+                return self.httpLoader.getBody(url: packageUrl)
+            }
+            .flatMap { buffer in
                 self.eventLoopGroup.next().submit {
-                    return try self.manifestLoader.load(buffer, url: url)
+                    return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
                     }
                     .flatMap { buffer in
                         self.eventLoopGroup.next().submit {
@@ -73,7 +77,14 @@ class PackageLoader {
         if index >= packageNames.count {
             return self.eventLoopGroup.next().makeSucceededFuture(Void())
         }
-        return addPackage(url: packageNames[index]).flatMap { return self.addPackageIndex(index: index+1) }
+        return addPackage(url: packageNames[index])
+            .flatMapError { (error)->Future<Void> in
+                print("Failed to load package from \(self.packageNames[index])")
+                return self.eventLoopGroup.next().makeSucceededFuture(Void())
+            }
+            .flatMap {
+                return self.addPackageIndex(index: index+1)
+        }
     }
 }
 
@@ -89,14 +100,14 @@ public class PackageManifestLoader {
         
         print("Loading manifest from \(url)")
         
+        let manifest : Manifest
         do {
-            let manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v5, fileSystem: fs, diagnostics: diagnostics)
-            let dependencies = manifest.dependencies.map {$0.url}
-            return dependencies
+            manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v5, fileSystem: fs, diagnostics: diagnostics)
         } catch {
-            print(error.localizedDescription)
+            manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: .v4, fileSystem: fs, diagnostics: diagnostics)
         }
-        return []
+        let dependencies = manifest.dependencies.map {$0.url}
+        return dependencies
     }
     
     let userToolchain : UserToolchain

@@ -6,17 +6,17 @@
         "repositoryURL": "https://github.com/swift-server/async-http-client",
         "state": {
           "branch": null,
-          "revision": "a42fe83781b5c4822e00706eaf6a4380b256be8a",
-          "version": "1.0.0-alpha.1"
+          "revision": "64851a1a0a2a9e8fa7ae7b3508ce46a1da4a2e1d",
+          "version": "1.0.0-alpha.2"
         }
       },
       {
         "package": "llbuild",
         "repositoryURL": "https://github.com/apple/swift-llbuild.git",
         "state": {
-          "branch": null,
-          "revision": "f1c9ad9a253cdf1aa89a7f5c99c30b4513b06ddb",
-          "version": "0.1.1"
+          "branch": "master",
+          "revision": "ba683491966a4316a642aa0aa382fbb2f21f1cdb",
+          "version": null
         }
       },
       {
@@ -41,9 +41,9 @@
         "package": "SwiftPM",
         "repositoryURL": "https://github.com/apple/swift-package-manager",
         "state": {
-          "branch": null,
-          "revision": "8656a25cb906c1896339f950ac960ee1b4fe8034",
-          "version": "0.4.0"
+          "branch": "swift-5.0.2-RELEASE",
+          "revision": "3a57975e10be0b1a8b87992ddf3a49701036f96c",
+          "version": null
         }
       }
     ]

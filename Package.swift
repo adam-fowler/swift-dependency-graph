@@ -11,7 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-server/async-http-client", .upToNextMajor(from: "1.0.0-alpha.1")),
-        .package(url: "https://github.com/apple/swift-package-manager", .upToNextMinor(from: "0.4.0"))
+        .package(url: "https://github.com/apple/swift-package-manager", .branch("swift-5.0.2-RELEASE"))
     ],
     targets: [
         .target(name: "swift-dependency-graph", dependencies: ["swift-dependency-graph-lib"]),

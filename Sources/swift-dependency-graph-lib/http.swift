@@ -13,6 +13,8 @@ import AsyncHTTPClient
 public class HTTPLoader {
     enum HTTPError : Error {
         case noPackageBody(String)
+        case failedToLoad(String)
+        case moved(String?)
     }
     
     let eventLoopGroup : EventLoopGroup
@@ -24,7 +26,23 @@ public class HTTPLoader {
     }
     
     public func get(url: String) -> EventLoopFuture<HTTPClient.Response> {
-        return client.get(url: url, deadline: .now() + .seconds(5))
+        return client.get(url: url, deadline: .now() + .seconds(5)).flatMapThrowing { (response)->HTTPClient.Response in
+            guard response.status != .movedPermanently else {throw HTTPError.moved(response.headers["Location"].first)}
+            guard response.status != .found else {throw HTTPError.moved(response.headers["Location"].first)}
+            guard response.status == .ok else {throw HTTPError.failedToLoad(url)}
+            return response
+            }
+            .flatMapError { (error)->EventLoopFuture<HTTPClient.Response> in
+                switch error {
+                case HTTPError.moved(let newUrl):
+                    if let url = newUrl {
+                        return self.get(url: url)
+                    }
+                default:
+                    break
+                }
+                return self.eventLoopGroup.next().makeFailedFuture(error)
+        }
     }
     
     public func getBody(url: String) -> EventLoopFuture<[UInt8]> {
