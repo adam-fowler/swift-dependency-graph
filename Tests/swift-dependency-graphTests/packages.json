@@ -1,4 +1,9 @@
 [
-  "https://github.com/adam-fowler/swift-dependency-graph.git",
-  "https://github.com/Flinesoft/AnyMenu.git"
+    "https://github.com/adam-fowler/swift-dependency-graph.git",
+    "https://github.com/AndyQ/NFCPassportReader.git",
+    "https://github.com/carson-katri/swift-request.git",
+    "https://github.com/cmtrounce/SwURL.git",
+    "https://github.com/dmytro-anokhin/url-image.git",
+    "https://github.com/egeniq/BetterSheet.git",
+    "https://github.com/enablex/VCXSocket.git",
 ]

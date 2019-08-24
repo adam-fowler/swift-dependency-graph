@@ -11,10 +11,14 @@ import Basic
 import Workspace
 import PackageLoading
 import PackageModel
+import SPMUtility
 
 enum PackageLoaderError : Error {
+    case invalidUrl
     case invalidManifest
     case looping
+    case gitVersionLoadingFailed(errorOutput: String)
+    case noVersions
 }
 
 
@@ -69,25 +73,25 @@ class PackageLoader {
         return addStartingFrom(index: 0)
     }
 
-    func addPackage(url: String) -> Future<Void> {
-        guard let packageUrl = Packages.getPackageUrl(url: url) else { return eventLoopGroup.next().makeSucceededFuture(Void())}
-        guard let packageV5Url = Packages.getPackageUrl(url: url, version: "5") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
-        guard let packageV4_2Url = Packages.getPackageUrl(url: url, version: "4.2") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
-        guard let packageV4Url = Packages.getPackageUrl(url: url, version: "4") else { return eventLoopGroup.next().makeSucceededFuture(Void())}
-        var packageUrlToLoad = packageV5Url
-        
-        // Look into getting versions
-        // git ls-remote --tags <repository>. Checkout GitRepositoryProvider, 
-        
+    func addPackage(url: String, version: String?) -> Future<[String]>{
+
+        let repositoryUrl : String
+        if let url = PackageLoader.getRawRepositoryUrl(url: url, version: version) {
+            repositoryUrl = url
+        } else {
+            return self.eventLoopGroup.next().makeFailedFuture(PackageLoaderError.invalidUrl)
+        }
         // Order of loading is
         // - Package@swift-5.swift
         // - Package.swift
         // - Package@swift-4.2.swift
         // - Package@swift-4.swift
         var errorPassedDown : Error? = nil
-        return httpLoader.getBody(url: packageV5Url)
+        var packageUrlToLoad = repositoryUrl + "/Package@swift-5.swift"
+        return self.httpLoader.getBody(url: packageUrlToLoad)
+            
             .flatMapError { (error)->Future<[UInt8]> in
-                packageUrlToLoad = packageUrl
+                packageUrlToLoad = repositoryUrl + "/Package.swift"
                 return self.httpLoader.getBody(url: packageUrlToLoad)
             }
             .flatMap { (buffer)->Future<[String]> in
@@ -97,7 +101,7 @@ class PackageLoader {
             }
             .flatMapError { (error)->Future<[String]> in
                 errorPassedDown = error
-                packageUrlToLoad = packageV4_2Url
+                packageUrlToLoad = repositoryUrl + "/Package@swift-4.2.swift"
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
                         return self.eventLoopGroup.next().submit {
@@ -106,7 +110,7 @@ class PackageLoader {
                 }
             }
             .flatMapError { (error)->Future<[String]> in
-                packageUrlToLoad = packageV4Url
+                packageUrlToLoad = repositoryUrl + "/Package@swift-4.swift"
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
                         return self.eventLoopGroup.next().submit {
@@ -116,17 +120,111 @@ class PackageLoader {
             }
             .flatMapErrorThrowing { error in
                 throw errorPassedDown ?? error
+        }
+        
+    }
+
+    func addPackage(url: String) -> Future<Void> {
+        // get package.swift from default branch
+        return self.getDefaultBranch(url: url).flatMap { (branch)->Future<[String]> in
+            return self.addPackage(url: url, version: branch)
             }
             .map { buffer in
                 print("Adding \(url)")
                 self.onAdd(url, Package(dependencies: buffer))
         }
-        /*.flatMap { buffer in
-         self.eventLoopGroup.next().submit {
-         print("Adding \(url)")
-         self.onAdd(url, Package(dependencies: buffer))
+    }
+    
+    func getDefaultBranch(url: String) -> Future<String> {
+        return eventLoopGroup.next().submit { ()->String in
+            guard let lsRemoteOutput = try? Process.checkNonZeroExit(
+                args: Git.tool, "ls-remote", "--symref", url, "HEAD", environment: Git.environment).spm_chomp() else {return "master"}
+            // split into tokens separated by space. The second token is the branch ref.
+            let branchRefTokens = lsRemoteOutput.components(separatedBy: CharacterSet.whitespacesAndNewlines)
+            var branch : Substring? = nil
+            if branchRefTokens.count > 1 {
+                // split branch ref by '/'. Last element is branch name
+                branch = branchRefTokens[1].split(separator: "/").last
+            }
+            if let branch = branch {
+                return String(branch)
+            }
+            return "master"
+        }
+    }
+    
+    func getLatestVersion(url: String) -> Future<String?> {
+        let regularExpressionXXX = try! NSRegularExpression(pattern: "[0-9]+\\.[0-9]+\\.[0-9]+$", options: [])
+        let regularExpressionXX = try! NSRegularExpression(pattern: "[0-9]+\\.[0-9]+$", options: [])
+        // Look into getting versions
+        // git ls-remote --tags <repository>.
+        return eventLoopGroup.next().submit { ()->String? in
+            guard let lsRemoteOutput = try? Process.checkNonZeroExit(
+                args: Git.tool, "ls-remote", "--tags", url, environment: Git.environment).spm_chomp() else {return nil}
+            let tags = lsRemoteOutput.split(separator: "\n").compactMap { $0.split(separator:"/").last }
+            let versions = tags
+                .map {String($0)}
+                .compactMap { (versionString)->(v:Version, s:String)? in
+                    /// if of form major.minor.patch
+                    let cleanVersionString : String
+                    let firstMatchRangeXXX = regularExpressionXXX.rangeOfFirstMatch(in: versionString, options: [], range: NSMakeRange(0, versionString.count))
+                    if let range = Range(firstMatchRangeXXX, in: versionString) {
+                        cleanVersionString = String(versionString[range])
+                    } else {
+                        /// if of form major.minor
+                        let firstMatchRangeXX = regularExpressionXX.rangeOfFirstMatch(in: versionString, options: [], range: NSMakeRange(0, versionString.count))
+                        if let range = Range(firstMatchRangeXX, in: versionString) {
+                            cleanVersionString = String(versionString[range])+".0"
+                        } else {
+                            return nil
+                        }
+                    }
+                    if let version = Version(string: cleanVersionString) {
+                        return (version, versionString)
+                    }
+                    return nil
                 }
-        }*/
+                .sorted {$0.v < $1.v}
+                .map {$0.s}
+
+            return versions.last
+        }
+    }
+    
+    /// get URL from github repository name
+    static func getRawRepositoryUrl(url: String, version: String? = nil) -> String? {
+        let url = Packages.cleanupName(url)
+        
+        // get Package.swift URL
+        var split = url.split(separator: "/", omittingEmptySubsequences: false)
+        if split.last == "" {
+            split = split.dropLast()
+        }
+        
+        if split.count > 2 && split[2] == "github.com" {
+            split[2] = "raw.githubusercontent.com"
+        } else if split.count > 2 && split[2] == "gitlab.com" {
+            split.append("raw")
+        }
+        
+        if let version = version {
+            split.append("\(version)")
+        } else {
+            split.append("master")
+        }
+        
+        return split.joined(separator: "/")
+    }
+    
+    /// return if this is a valid repository name
+    static func isValidUrl(url: String) -> Bool {
+        var split = url.split(separator: "/", omittingEmptySubsequences: false)
+        if split[0].hasPrefix("git@github.com") && split.count == 2
+            || split.count > 4 && split[2] == "github.com"
+            || split.count > 4 && split[2] == "gitlab.com" {
+            return true
+        }
+        return false
     }
 }
 

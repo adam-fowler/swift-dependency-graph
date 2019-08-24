@@ -63,7 +63,7 @@ public class Packages {
         packages[name] = package
         
         for dependency in package.dependencies {
-            guard Packages.isValidUrl(url: dependency) else { continue }
+            guard PackageLoader.isValidUrl(url: dependency) else { continue }
             let dependencyName = Packages.cleanupName(dependency)
             if packages[dependencyName] == nil {
                 packages[dependencyName] = Package()
@@ -91,6 +91,37 @@ public class Packages {
         }
     }
     
+    /// import packages.json file
+    public func `import`(url: String, iterations : Int = 100) throws {
+        let loader = try PackageLoader(onAdd: { name, package in
+            self.add(name: name, package: package)
+        }, onError: { name, error in
+            print("Failed to load package from \(name) error: \(Packages.stringFromError(error))")
+            self.addLoadingError(name: name, error: error)
+        })
+        
+        // Load package names from url
+        var packageNames = try loader.load(url: url, packages: self)
+        
+        var iterations = iterations
+        repeat {
+            try loader.loadPackages(packageNames).wait()
+            
+            // verify we havent got stuck in a loop
+            iterations -= 1
+            guard iterations > 0 else { throw PackageLoaderError.looping }
+            
+            // create new list of packages containing packages that haven't been loaded
+            packageNames = packages.compactMap {return !$0.value.readPackageSwift ? $0.key : nil}
+        } while(packageNames.count > 0)
+    }
+    
+    /// save dependency file
+    public func save(filename: String) throws {
+        let data = try JSONEncoder().encode(packages)
+        try data.write(to: URL(fileURLWithPath: filename))
+    }
+
     /// convert error to string
     static func stringFromError(_ error: Error) -> String {
         switch error {
@@ -124,71 +155,6 @@ public class Packages {
             return String(packageName.dropLast())
         }
         return packageName
-    }
-    
-    /// get package URL from github repository name
-    static func getPackageUrl(url: String, version: String? = nil) -> String? {
-        let url = Packages.cleanupName(url)
-        
-        // get Package.swift URL
-        var split = url.split(separator: "/", omittingEmptySubsequences: false)
-        if split.last == "" {
-            split = split.dropLast()
-        }
-        
-        if split.count > 2 && split[2] == "github.com" {
-            split[2] = "raw.githubusercontent.com"
-        } else if split.count > 2 && split[2] == "gitlab.com" {
-            split.append("raw")
-        }
-        
-        if let version = version {
-            split.append("master/Package@swift-\(version).swift")
-        } else {
-            split.append("master/Package.swift")
-        }
-        
-        return split.joined(separator: "/")
-    }
-    
-    /// return if this is a valid repository name
-    static func isValidUrl(url: String) -> Bool {
-        var split = url.split(separator: "/", omittingEmptySubsequences: false)
-        if split[0].hasPrefix("git@github.com") && split.count == 2
-            || split.count > 4 && split[2] == "github.com"
-            || split.count > 4 && split[2] == "gitlab.com" {
-            return true
-        }
-        return false
-    }
-    
-    public func `import`(url: String, iterations : Int = 100) throws {
-        let loader = try PackageLoader(onAdd: { name, package in
-            self.add(name: name, package: package)
-        }, onError: { name, error in
-            print("Failed to load package from \(name)")
-            self.addLoadingError(name: name, error: error)
-        })
-
-        // Load package names from url
-        var packageNames = try loader.load(url: url, packages: self)
-        
-        var iterations = iterations
-        repeat {
-            try loader.loadPackages(packageNames).wait()
-            
-            // verify we havent got stuck in a loop
-            iterations -= 1
-            guard iterations > 0 else { throw PackageLoaderError.looping }
-
-            // create new list of packages containing packages that haven't been loaded
-            packageNames = packages.compactMap {return !$0.value.readPackageSwift ? $0.key : nil}
-        } while(packageNames.count > 0)
-    }
-    
-    public func save(filename: String) throws {
-        let data = try JSONEncoder().encode(packages)
-        try data.write(to: URL(fileURLWithPath: filename))
     }
     
     let semaphore = DispatchSemaphore(value: 1)

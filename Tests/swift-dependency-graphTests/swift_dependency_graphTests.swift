@@ -59,29 +59,89 @@ final class swift_dependency_graphTests: XCTestCase {
             try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/vapor/json.git").wait()
         }
     }
-    func testLoadPackageV5_1Test() {
+    
+    /*func testLoadPackageV5_1Test() {
         attempt {
             try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/freak4pc/combinecocoa.git").wait()
         }
+    }*/
+    
+    func testOnReleaseNotMaster() {
+        attempt {
+            // Package.swift on master branch is corrupt but release branch version is fine
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/httpswift/swifter.git").wait()
+            // no master branch but there is a release with package available
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/tomlokhorst/xcodeedit").wait()
+        }
+    }
+
+    func testReleasesInvalidVersionTags() {
+        attempt {
+            // Release numbers have a v suffix
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Bilue/ContentFittingWebView").wait()
+        }
     }
     
-    /*func testLoadNonMasterPackageTest() {
+    func testReleasesNumbersNotFormattedCorrectly() {
         attempt {
+            // Release numbers are incorrect using major.minor not major.minor.patch
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Alecrim/AlecrimAsyncKit").wait()
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/alexdrone/Store").wait()
+        }
+    }
+    
+    func testReleaseNumbersThatGoHigherThanNine() {
+        attempt {
+            // Releases are sorted alphabetically. Need to create version object for release and sort those
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Carthage/Commandant").wait()
+        }
+    }
+
+    func testOnMasterButNotRelease() {
+        attempt {
+            // Package.swift doesn't exist in the branch, while there is one on master
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/abdullahselek/TakeASelfie").wait()
+        }
+    }
+    
+    func testLoadNonMasterPackageTest() {
+        attempt {
+            // Package.swift not on master and there are no releases
             try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Flinesoft/AnyMenu.git").wait()
         }
-    }*/
+    }
     
     func testLoadErroringPackage() {
         attempt {
             //
-            // Package.swift on master branch is corrupt but release branch version is fine
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/httpswift/swifter.git").wait()
-            // empty Package
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/dentelezhkin/dwifft").wait()
-            // no master branch but there is a release with package available
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/tomlokhorst/xcodeedit").wait()
+            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/piknotech/SFSafeSymbols").wait()
         }
     }
+    
+    /*
+     Failed to load package from https://github.com/AndyQ/NFCPassportReader.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/carson-katri/swift-request.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/cmtrounce/SwURL.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/dmytro-anokhin/url-image.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/egeniq/BetterSheet.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/enablex/VCXSocket.git error: FailedToLoad Doesn't exist
+     Failed to load package from https://github.com/Flinesoft/AnyMenu.git error: FailedToLoad No master branch, no relese
+     Failed to load package from https://github.com/freak4pc/CombineCocoa.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/Jimmy-Lee/Networking.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/nvzqz/FileKit.git error: InvalidManifest release version invalid, no master branch
+     Failed to load package from https://github.com/phimage/morphi.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/pietropizzi/GridStack.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/piknotech/SFSafeSymbols.git error: FailedToLoad 5.1
+     Failed to load package from https://github.com/SwiftUIX/SwiftUIX.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/swiftwebui/SwiftWebUI.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/tcldr/Entwine.git error: InvalidManifest 5.1
+     Failed to load package from https://github.com/mdaxter/bignumgmp.git error: InvalidManifest empty Package.swift
+     Failed to load package from https://github.com/vzsg/ed25519.git error: InvalidManifest empty Package.swift
+     Failed to load package from https://github.com/kthomas/jwtdecode.swift.git error: FailedToLoad doesn't exist
+     Failed to load package from https://github.com/dentelezhkin/dwifft.git error: InvalidManifest empty Package.swift
+     Failed to load package from https://github.com/kthomas/uickeychainstore.git error: FailedToLoad doesn't exist
+     */
+    
     
     func testLoadPackageJson() {
         attempt {
@@ -91,12 +151,12 @@ final class swift_dependency_graphTests: XCTestCase {
                 .map { String(describing: $0) }
                 .joined(separator:"/")
             let packages = Packages()
-            try packages.import(url: rootFolder + "/packages.json", iterations: 4)
-
+            try packages.import(url: rootFolder + "/packages.json", iterations: 8)
+            
             XCTAssertNotNil(packages.packages["https://github.com/adam-fowler/swift-dependency-graph"])
             XCTAssertNotNil(packages.packages["https://github.com/apple/swift-package-manager"])
             XCTAssertNotNil(packages.packages["https://github.com/apple/swift-llbuild"])
-            XCTAssertNotNil(packages.packages["https://github.com/flinesoft/anymenu"]?.error)
+            XCTAssertNotNil(packages.packages["https://github.com/enablex/vcxsocket"]?.error)
         }
     }
     
