@@ -101,7 +101,9 @@ public class Packages {
         })
         
         // Load package names from url
-        var packageNames = try loader.load(url: url, packages: self)
+        var packageNames = try loader.load(url: url, packages: self).map { Packages.cleanupName($0)}
+        // remove duplicate packages and sort
+        packageNames = Array(Set(packageNames)).sorted()
         
         var iterations = iterations
         repeat {
@@ -137,6 +139,7 @@ public class Packages {
     /// convert name from github/repository.git to github/repository
     public static func cleanupName(_ packageName: String) -> String {
         var packageName = packageName.lowercased()
+        // if package is recorded as git@github.com changes to https://github.com/
         if packageName.hasPrefix("git@github.com") {
             var split = packageName.split(separator: "/", omittingEmptySubsequences: false)
             let split2 = split[0].split(separator: ":")
@@ -150,8 +153,10 @@ public class Packages {
         }
         
         if packageName.suffix(4) == ".git" {
+            // remove .git suffix
             return String(packageName.prefix(packageName.count - 4))
         } else if packageName.last == "/" {
+            // ensure name doesn't end with "/"
             return String(packageName.dropLast())
         }
         return packageName

@@ -38,6 +38,7 @@ class PackageLoader {
         self.onError = onError
     }
     
+    /// load package names from json
     func load(url: String, packages: Packages) throws -> [String] {
         if url.hasPrefix("http") {
             // get package names
@@ -55,6 +56,7 @@ class PackageLoader {
         }
     }
     
+    /// load packages from array of package names
     func loadPackages(_ packages: [String]) -> Future<Void> {
         func addStartingFrom(index: Int) -> Future<Void> {
             if index >= packages.count {
@@ -73,6 +75,18 @@ class PackageLoader {
         return addStartingFrom(index: 0)
     }
 
+    /// add a package, works out default branch and calls add package with branch name, then calls onAdd callback
+    func addPackage(url: String) -> Future<Void> {
+        // get package.swift from default branch
+        return self.getDefaultBranch(url: url).flatMap { (branch)->Future<[String]> in
+            return self.addPackage(url: url, version: branch)
+            }
+            .map { buffer in
+                print("Adding \(url)")
+                self.onAdd(url, Package(dependencies: buffer))
+        }
+    }
+    
     func addPackage(url: String, version: String?) -> Future<[String]>{
 
         let repositoryUrl : String
@@ -124,17 +138,6 @@ class PackageLoader {
         
     }
 
-    func addPackage(url: String) -> Future<Void> {
-        // get package.swift from default branch
-        return self.getDefaultBranch(url: url).flatMap { (branch)->Future<[String]> in
-            return self.addPackage(url: url, version: branch)
-            }
-            .map { buffer in
-                print("Adding \(url)")
-                self.onAdd(url, Package(dependencies: buffer))
-        }
-    }
-    
     func getDefaultBranch(url: String) -> Future<String> {
         return eventLoopGroup.next().submit { ()->String in
             guard let lsRemoteOutput = try? Process.checkNonZeroExit(
@@ -218,7 +221,7 @@ class PackageLoader {
     
     /// return if this is a valid repository name
     static func isValidUrl(url: String) -> Bool {
-        var split = url.split(separator: "/", omittingEmptySubsequences: false)
+        let split = url.split(separator: "/", omittingEmptySubsequences: false)
         if split[0].hasPrefix("git@github.com") && split.count == 2
             || split.count > 4 && split[2] == "github.com"
             || split.count > 4 && split[2] == "gitlab.com" {
