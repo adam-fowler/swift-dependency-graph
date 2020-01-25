@@ -31,6 +31,9 @@
                 background-size: auto;
                 background-attachment: fixed;
             }
+            .google-visualization-orgchart-table {
+                padding: 16px;
+            }
             .chart-node {
                 text-align: left;
                 vertical-align: middle;
@@ -112,6 +115,7 @@
             var dependencyData
             var rootName = "https://github.com/adam-fowler/swift-dependency-graph"
             var nodeId = 0
+            var nodePositions = {}
 
             function createChart() {
                 // Create the chart.
@@ -135,9 +139,25 @@
                         if (selection.length == 0) {
                             return
                         }
-                        let newRoot = chart_data.getValue(selection[0].row, 0).split('#')[0]
-
-                        if (newRoot == rootName) {
+                        let value = chart_data.getValue(selection[0].row, 0)
+                        let newRoot = value.split('#')[0]
+                        if (newRoot == "__next__") {
+                            let rootName = value.split('#')[1]
+                            var position = 1
+                            if (nodePositions[rootName] != undefined) {
+                                position = nodePositions[rootName] + 1
+                            }
+                            nodePositions[rootName] = position
+                        }
+                        else if (newRoot == "__prev__") {
+                            let rootName = value.split('#')[1]
+                            var position = 0
+                            if (nodePositions[rootName] != undefined) {
+                                position = nodePositions[rootName] - 1
+                            }
+                            nodePositions[rootName] = position
+                        }
+                        else if (newRoot == rootName) {
                             if (direction == "on") { direction = "to" } else { direction = "on" }
                         } else {
                             rootName = newRoot
@@ -208,11 +228,29 @@
                 if (level == 0) {
                     return
                 }
+                let maxPackages = 16
                 let nodeId2 = nodeId
                 let root = dependencyData[rootName]
-                data.addRows(root[direction].map(function(name){return [{v:`${name}#${nodeId2}`, f:renderName(name)}, rootNameCount, tooltipForName(name)]}))
-                for(entry in root[direction]) {
-                    let rootName = root[direction][entry]
+                var position = 0
+                if (nodePositions[rootName] != undefined) {
+                    position = nodePositions[rootName]
+                }
+                var packagesToDisplay = root[direction]
+                if (direction == "to") {
+                    packagesToDisplay = packagesToDisplay.slice(position*maxPackages,(position+1)*maxPackages)
+                }
+                var rows = packagesToDisplay.map(function(name){return [{v:`${name}#${nodeId2}`, f:renderName(name)}, rootNameCount, tooltipForName(name)]})
+                // if node position is greater than zero than add previous node
+                if (position > 0 && direction == "to") {
+                    data.addRow([{v:`__prev__#${rootName}`, f:"<h1>\u2190</h1>"}, rootNameCount, "Show more ..."])
+                }
+                data.addRows(rows)
+                // if there are more than macPackages to display then add a next button
+                if (root[direction].length - position*maxPackages > maxPackages && direction == "to") {
+                    data.addRow([{v:`__next__#${rootName}`, f:"<h1>\u2192</h1>"}, rootNameCount, "Show more ..."])
+                }
+                for(entry in packagesToDisplay) {
+                    let rootName = packagesToDisplay[entry]
                     addRows(data, rootName, level-1, `${rootName}#${nodeId2}`)
                 }
 
