@@ -15,6 +15,7 @@ import SPMUtility
 
 enum PackageLoaderError : Error {
     case invalidUrl
+    case invalidToolsVersion
     case invalidManifest
     case looping
     case gitVersionLoadingFailed(errorOutput: String)
@@ -119,7 +120,7 @@ class PackageLoader {
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
                         return self.eventLoopGroup.next().submit {
-                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad, versions: [.v4, .v4_2])
+                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
                         }
                 }
             }
@@ -128,7 +129,7 @@ class PackageLoader {
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
                         return self.eventLoopGroup.next().submit {
-                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad, versions: [.v4])
+                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
                         }
                 }
             }
@@ -232,33 +233,57 @@ class PackageLoader {
 }
 
 public class PackageManifestLoader {
+    
+    let resources: UserManifestResources
+    let loader: ManifestLoader
+    
     public init() throws {
-        self.userToolchain = try UserToolchain(destination: Destination.hostDestination(AbsolutePath("/Library/Developer/CommandLineTools/usr/bin/")))
+        self.resources = try UserManifestResources(swiftCompiler: swiftCompiler)
+        self.loader = ManifestLoader(manifestResources: resources)
     }
     
-    public func load(_ buffer: [UInt8], url: String, versions: [ManifestVersion] = [.v4,.v4_2,.v5]) throws -> [String] {
-        var versions = versions
-        let diagnostics = DiagnosticsEngine()
+    // We will need to know where the Swift compiler is.
+    var swiftCompiler: AbsolutePath = {
+        let string: String
+        #if os(macOS)
+        string = try! Process.checkNonZeroExit(args: "xcrun", "--sdk", "macosx", "-f", "swiftc").spm_chomp()
+        #else
+        string = try! Process.checkNonZeroExit(args: "which", "swiftc").spm_chomp()
+        #endif
+        return AbsolutePath(string)
+    }()
+
+    public func load(_ buffer: [UInt8], url: String) throws -> [String] {
         let fs = InMemoryFileSystem()
-        try fs.writeFileContents(AbsolutePath("/Package.swift"), bytes: ByteString(buffer))
+        try fs.createDirectory(AbsolutePath("/Package"))
+        try fs.writeFileContents(AbsolutePath("/Package/Package.swift"), bytes: ByteString(buffer))
         
         print("Loading manifest from \(url)")
         
-        while(true) {
-            do {
-                guard let version = versions.last else {throw PackageLoaderError.invalidManifest}
-                let manifest = try ManifestLoader(manifestResources: userToolchain.manifestResources).load(packagePath:AbsolutePath("/"), baseURL: url, version: nil, manifestVersion: version, fileSystem: fs, diagnostics: diagnostics)
-                let dependencies = manifest.dependencies.map {$0.url}
-                return dependencies
-            } catch PackageLoaderError.invalidManifest {
-                throw PackageLoaderError.invalidManifest
-            } catch {
-                versions = versions.dropLast()
+        do {
+            var toolsVersion = try ToolsVersionLoader().load(at: AbsolutePath("/Package/"), fileSystem: fs)
+            if toolsVersion < ToolsVersion.minimumRequired {
+                print("error: Package version is below minimum, trying minimum")
+                toolsVersion = .minimumRequired
             }
+            let manifest = try loader.load(
+                package: AbsolutePath("/Package/"),
+                baseURL: AbsolutePath("/Package/").pathString,
+                manifestVersion: toolsVersion.manifestVersion,
+                fileSystem: fs
+            )
+            
+            let dependencies = manifest.dependencies.map {$0.url}
+            return dependencies
+        } catch PackageLoaderError.invalidManifest {
+            throw PackageLoaderError.invalidManifest
+        } catch is ManifestParseError {
+            throw PackageLoaderError.invalidManifest
+        } catch {
+            print(error)
+            throw error
         }
     }
-    
-    let userToolchain : UserToolchain
 }
 
 
