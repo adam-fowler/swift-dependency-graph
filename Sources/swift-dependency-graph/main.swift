@@ -26,11 +26,11 @@ class System {
 let startTime = Date()
 let id = System.preventSleep(reason: "Swift Dependency Graph")
 
-let packages = Packages()
 let rootPath = #file.split(separator: "/", omittingEmptySubsequences: false).dropLast(3).joined(separator: "/")
 let url = "https://raw.githubusercontent.com/daveverwer/SwiftPMLibrary/master/packages.json"
 
 do {
+    let packages = try Packages()
     try packages.import(url: url)
     try packages.save(filename: rootPath + "/dependencies.json")
 } catch {

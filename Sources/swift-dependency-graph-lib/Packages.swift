@@ -51,10 +51,12 @@ public struct Package : Encodable {
 public class Packages {
     public private(set) var packages : [String: Package] = [:]
     
-    public init() {}
+    public init() throws {
+        self.loader = try PackageLoader(onAdd: self.add, onError: self.error)
+    }
     
     /// add a package
-    public func add(name: String, package: Package) {
+    func add(name: String, package: Package) {
         let name = Packages.cleanupName(name)
         semaphore.wait()
         defer {
@@ -78,7 +80,11 @@ public class Packages {
             packages[dependencyName]!.dependents.insert(name)
         }
     }
-    
+    func error(name: String, error: Error) {
+        print("Failed to load package from \(name) error: \(Packages.stringFromError(error))")
+        self.addLoadingError(name: name, error: error)
+    }
+
     /// set loading package failed
     public func addLoadingError(name: String, error: Error) {
         let name = Packages.cleanupName(name)
@@ -100,17 +106,15 @@ public class Packages {
     
     /// import packages.json file
     public func `import`(url: String, iterations : Int = 100) throws {
-        let loader = try PackageLoader(onAdd: { name, package in
-            self.add(name: name, package: package)
-        }, onError: { name, error in
-            print("Failed to load package from \(name) error: \(Packages.stringFromError(error))")
-            self.addLoadingError(name: name, error: error)
-        })
-        
         // Load package names from url
-        var packageNames = try loader.load(url: url, packages: self).map { Packages.cleanupName($0)}
+        let packageNames = try loader.load(url: url, packages: self).map { Packages.cleanupName($0)}
+        
+        try loadPackages(packageNames, iterations: iterations)
+    }
+    
+    func loadPackages(_ packageNames: [String], iterations : Int = 100) throws {
         // remove duplicate packages and sort
-        packageNames = Array(Set(packageNames)).sorted()
+        var packageNames = Array(Set(packageNames)).sorted()
         
         var iterations = iterations
         repeat {
@@ -172,5 +176,8 @@ public class Packages {
     }
     
     let semaphore = DispatchSemaphore(value: 1)
+    var loader: PackageLoader!
+    
+
 }
 

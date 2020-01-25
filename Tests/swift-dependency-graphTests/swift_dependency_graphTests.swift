@@ -111,6 +111,12 @@ final class swift_dependency_graphTests: XCTestCase {
         }
     }
     
+    func testLoadingDependencyWithWWWPrefix() throws {
+        let packages = try Packages()
+        try packages.loadPackages(["https://github.com/krad/memento.git"])
+        XCTAssertNotNil(packages.packages["https://www.github.com/krad/clibavcodec"])
+    }
+    
     func testLoadErroringPackage() {
         attempt {
             //
@@ -135,7 +141,7 @@ final class swift_dependency_graphTests: XCTestCase {
                 .dropLast(1)
                 .map { String(describing: $0) }
                 .joined(separator:"/")
-            let packages = Packages()
+            let packages = try Packages()
             try packages.import(url: rootFolder + "/packages.json", iterations: 8)
             
             XCTAssertNotNil(packages.packages["https://github.com/adam-fowler/swift-dependency-graph"])

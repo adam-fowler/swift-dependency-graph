@@ -225,7 +225,9 @@ class PackageLoader {
         let split = url.split(separator: "/", omittingEmptySubsequences: false)
         if split[0].hasPrefix("git@github.com") && split.count == 2
             || split.count > 4 && split[2] == "github.com"
-            || split.count > 4 && split[2] == "gitlab.com" {
+            || split.count > 4 && split[2] == "www.github.com"
+            || split.count > 4 && split[2] == "gitlab.com"
+            || split.count > 4 && split[2] == "www.gitlab.com" {
             return true
         }
         return false
