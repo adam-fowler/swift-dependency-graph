@@ -60,11 +60,11 @@ final class swift_dependency_graphTests: XCTestCase {
         }
     }
     
-    /*func testLoadPackageV5_1Test() {
+    func testLoadPackageV5_1Test() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/freak4pc/combinecocoa.git").wait()
+            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Jimmy-Lee/Networking.git").wait()
         }
-    }*/
+    }
     
     func testOnReleaseNotMaster() {
         attempt {
@@ -114,27 +114,12 @@ final class swift_dependency_graphTests: XCTestCase {
     func testLoadErroringPackage() {
         attempt {
             //
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/piknotech/SFSafeSymbols").wait()
+            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/kthomas/jwtdecode.swift").wait()
         }
     }
-    
+        
     /*
-     Failed to load package from https://github.com/AndyQ/NFCPassportReader.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/carson-katri/swift-request.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/cmtrounce/SwURL.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/dmytro-anokhin/url-image.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/egeniq/BetterSheet.git error: InvalidManifest 5.1
      Failed to load package from https://github.com/enablex/VCXSocket.git error: FailedToLoad Doesn't exist
-     Failed to load package from https://github.com/Flinesoft/AnyMenu.git error: FailedToLoad No master branch, no relese
-     Failed to load package from https://github.com/freak4pc/CombineCocoa.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/Jimmy-Lee/Networking.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/nvzqz/FileKit.git error: InvalidManifest release version invalid, no master branch
-     Failed to load package from https://github.com/phimage/morphi.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/pietropizzi/GridStack.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/piknotech/SFSafeSymbols.git error: FailedToLoad 5.1
-     Failed to load package from https://github.com/SwiftUIX/SwiftUIX.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/swiftwebui/SwiftWebUI.git error: InvalidManifest 5.1
-     Failed to load package from https://github.com/tcldr/Entwine.git error: InvalidManifest 5.1
      Failed to load package from https://github.com/mdaxter/bignumgmp.git error: InvalidManifest empty Package.swift
      Failed to load package from https://github.com/vzsg/ed25519.git error: InvalidManifest empty Package.swift
      Failed to load package from https://github.com/kthomas/jwtdecode.swift.git error: FailedToLoad doesn't exist
