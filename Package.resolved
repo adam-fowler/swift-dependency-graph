@@ -41,8 +41,8 @@
         "package": "SwiftPM",
         "repositoryURL": "https://github.com/apple/swift-package-manager",
         "state": {
-          "branch": "swift-5.0.2-RELEASE",
-          "revision": "3a57975e10be0b1a8b87992ddf3a49701036f96c",
+          "branch": "swift-5.1-DEVELOPMENT-SNAPSHOT-2020-01-23-a",
+          "revision": "331fa5cb245be1e4e16640f20f123eb3461eeced",
           "version": null
         }
       }
