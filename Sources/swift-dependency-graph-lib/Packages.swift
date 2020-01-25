@@ -10,7 +10,7 @@ import NIO
 
 typealias Future = EventLoopFuture
 
-public struct Package : Codable {
+public struct Package : Encodable {
     /// has the package been setup fully with its dependencies setup
     public var readPackageSwift: Bool = false
     /// packages we are dependent on
@@ -32,6 +32,13 @@ public struct Package : Codable {
         self.readPackageSwift = true
         self.dependencies = Set<String>(dependencies.map { Packages.cleanupName($0) })
         self.dependents = []
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(dependencies.map{$0}.sorted(), forKey: .dependencies)
+        try container.encode(dependents.map{$0}.sorted(), forKey: .dependents)
+        try container.encode(error, forKey: .error)
     }
     
     enum CodingKeys : String, CodingKey {
@@ -127,6 +134,8 @@ public class Packages {
     /// convert error to string
     static func stringFromError(_ error: Error) -> String {
         switch error {
+        case PackageLoaderError.invalidToolsVersion:
+            return "Requires later version of Swift"
         case PackageLoaderError.invalidManifest:
             return "InvalidManifest"
         case HTTPLoader.HTTPError.failedToLoad(_):
