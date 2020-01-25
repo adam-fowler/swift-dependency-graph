@@ -109,6 +109,9 @@
             google.charts.load('current', {packages:["orgchart"]});
             google.charts.setOnLoadCallback(loadDependencies);
 
+            var queryDict = {}
+            location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
+            
             var chart
             var chart_data
             var direction = "on"
@@ -117,6 +120,21 @@
             var nodeId = 0
             var nodePositions = {}
 
+            parseQueryParams()
+        
+            function parseQueryParams() {
+                var queryDict = {}
+                location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
+                
+                if (queryDict["package"] != undefined) {
+                    // root name without git extension. regex removes extension
+                    rootName = queryDict["package"].replace(/\.[^\//.]+$/, "")
+                }
+                if (queryDict["dependents"] != undefined && queryDict["dependents"] != 0) {
+                    direction = "to"
+                }
+            }
+        
             function createChart() {
                 // Create the chart.
                 let container = document.getElementById('chart_div')
