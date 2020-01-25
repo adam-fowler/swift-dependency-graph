@@ -245,7 +245,7 @@
                     data.addRow([{v:`__prev__#${rootName}`, f:"<h1>\u2190</h1>"}, rootNameCount, "Show more ..."])
                 }
                 data.addRows(rows)
-                // if there are more than macPackages to display then add a next button
+                // if there are more than maxPackages to display then add a next button
                 if (root[direction].length - position*maxPackages > maxPackages && direction == "to") {
                     data.addRow([{v:`__next__#${rootName}`, f:"<h1>\u2192</h1>"}, rootNameCount, "Show more ..."])
                 }
@@ -255,6 +255,7 @@
                 }
 
             }
+        
             function drawChart() {
                 chart_data = new google.visualization.DataTable();
 
@@ -263,10 +264,10 @@
                 chart_data.addColumn('string', 'ToolTip');
 
                 let root = dependencyData[rootName]
-                nodeCount = 0
+                nodeId = 0
                 chart_data.addRows([[{v:rootName, f:renderName(rootName)}, "", tooltipForName(rootName)]]);
                 addRows(chart_data, rootName, 5, rootName)
-
+                console.log(`Number of nodes ${nodeId}`)
                 // set background
                 var backgroundImages = {"to" : "images/solid-arrow-circle-down.svg", "on" : "images/solid-arrow-circle-up.svg"}
                 document.body.style.backgroundImage = `url(${backgroundImages[direction]})`

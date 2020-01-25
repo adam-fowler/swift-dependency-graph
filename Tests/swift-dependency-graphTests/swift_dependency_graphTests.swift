@@ -117,6 +117,12 @@ final class swift_dependency_graphTests: XCTestCase {
         XCTAssertNotNil(packages.packages["https://www.github.com/krad/clibavcodec"])
     }
     
+    func testLoadingDuplicates() throws {
+        let packages = try Packages()
+        try packages.loadPackages(["https://github.com/adam-fowler/swift-dependency-graph"])
+        try packages.loadPackages(["https://github.com/adam-fowler/swift-dependency-graph"])
+    }
+    
     func testLoadErroringPackage() {
         attempt {
             //

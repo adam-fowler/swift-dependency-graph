@@ -7,7 +7,6 @@ let package = Package(
     name: "SwiftDependencyGraph",
     products: [
         .executable(name: "swift-dependency-graph", targets: ["swift-dependency-graph"]),
-        .library(name: "swift-dependency-graph-lib", targets: ["swift-dependency-graph-lib"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swift-server/async-http-client", .upToNextMajor(from: "1.0.0-alpha.1")),

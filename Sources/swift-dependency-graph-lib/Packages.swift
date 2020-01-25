@@ -10,7 +10,7 @@ import NIO
 
 typealias Future = EventLoopFuture
 
-public struct Package : Encodable {
+public struct Package : Codable {
     /// has the package been setup fully with its dependencies setup
     public var readPackageSwift: Bool = false
     /// packages we are dependent on
@@ -36,8 +36,8 @@ public struct Package : Encodable {
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(dependencies.map{$0}.sorted(), forKey: .dependencies)
-        try container.encode(dependents.map{$0}.sorted(), forKey: .dependents)
+        try container.encode(dependencies.map{$0}.sorted(by:{ return $0.split(separator: "/").last! < $1.split(separator: "/").last! }), forKey: .dependencies)
+        try container.encode(dependents.map{$0}.sorted(by:{ return $0.split(separator: "/").last! < $1.split(separator: "/").last! }), forKey: .dependents)
         try container.encode(error, forKey: .error)
     }
     
@@ -49,10 +49,16 @@ public struct Package : Encodable {
 }
 
 public class Packages {
-    public private(set) var packages : [String: Package] = [:]
+    public private(set) var packages : [String: Package]
     
     public init() throws {
-        self.loader = try PackageLoader(onAdd: self.add, onError: self.error)
+        self.packages = [:]
+        self.loader = try PackageLoader(onAdd: self.add, onError: self.addLoadingError)
+    }
+    
+    public init(packages: [String: Package]) throws {
+        self.packages = packages
+        self.loader = try PackageLoader(onAdd: self.add, onError: self.addLoadingError)
     }
     
     /// add a package
@@ -66,13 +72,18 @@ public class Packages {
         var package = package
         // if package already exists then add the dependent of the original package to the new one
         if let package2 = packages[name] {
-            assert(package2.readPackageSwift != true)
+            guard package2.readPackageSwift != true else {return}
             package.dependents = package2.dependents
         }
         packages[name] = package
         
         for dependency in package.dependencies {
-            guard PackageLoader.isValidUrl(url: dependency) else { continue }
+            // guard against invalid urls. If invalid remove from dependency list
+            guard PackageLoader.isValidUrl(url: dependency) else {
+                print("Error: removed dependency as the URL was invalid")
+                packages[name]?.dependencies.remove(dependency)
+                continue
+            }
             let dependencyName = Packages.cleanupName(dependency)
             if packages[dependencyName] == nil {
                 packages[dependencyName] = Package()
@@ -80,13 +91,10 @@ public class Packages {
             packages[dependencyName]!.dependents.insert(name)
         }
     }
-    func error(name: String, error: Error) {
-        print("Failed to load package from \(name) error: \(Packages.stringFromError(error))")
-        self.addLoadingError(name: name, error: error)
-    }
 
     /// set loading package failed
     public func addLoadingError(name: String, error: Error) {
+        print("Failed to load package from \(name) error: \(Packages.stringFromError(error))")
         let name = Packages.cleanupName(name)
         semaphore.wait()
         defer {
@@ -113,8 +121,11 @@ public class Packages {
     }
     
     func loadPackages(_ packageNames: [String], iterations : Int = 100) throws {
-        // remove duplicate packages and sort
-        var packageNames = Array(Set(packageNames)).sorted()
+        // remove duplicate packages, sort and remove packages we have already loaded
+        var packageNames = Array(Set(packageNames)).sorted().compactMap {
+            let name = Packages.cleanupName($0)
+            return packages[name] == nil ? $0 : nil
+        }
         
         var iterations = iterations
         repeat {
