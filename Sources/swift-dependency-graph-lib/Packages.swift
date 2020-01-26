@@ -49,14 +49,15 @@ public struct Package : Codable {
 }
 
 public class Packages {
-    public private(set) var packages : [String: Package]
+    public typealias Container = [String: Package]
+    public private(set) var packages : Container
     
     public init() throws {
         self.packages = [:]
         self.loader = try PackageLoader(onAdd: self.add, onError: self.addLoadingError)
     }
     
-    public init(packages: [String: Package]) throws {
+    public init(packages: Container) throws {
         self.packages = packages
         self.loader = try PackageLoader(onAdd: self.add, onError: self.addLoadingError)
     }
@@ -122,9 +123,9 @@ public class Packages {
     
     func loadPackages(_ packageNames: [String], iterations : Int = 100) throws {
         // remove duplicate packages, sort and remove packages we have already loaded
-        var packageNames = Array(Set(packageNames)).sorted().compactMap {
-            let name = Packages.cleanupName($0)
-            return packages[name] == nil ? $0 : nil
+        var packageNames = Array(Set(packageNames)).sorted().compactMap { (name)->String? in
+            let name = Packages.cleanupName(name)
+            return packages[name] == nil ? name : nil
         }
         
         var iterations = iterations
