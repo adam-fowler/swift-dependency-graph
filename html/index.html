@@ -124,6 +124,7 @@
             var rootName = "https://github.com/adam-fowler/swift-dependency-graph"
             var nodeId = 0
             var nodePositions = {}
+            var nodeToView
 
             parseQueryParams()
 
@@ -182,6 +183,7 @@
                         }
                         else if (newRoot == "__expand__") {
                             expandedNode = value
+                            //nodeToView =
                         }
                         else if (newRoot == rootName) {
                             if (direction == "on") { direction = "to" } else { direction = "on" }
@@ -225,11 +227,15 @@
                 return name
             }
 
-            function renderName(name) {
+            function idName(id) {
+                return id.replace(/\W/g, '')
+            }
+            function renderName(name, id) {
                 let split = name.split("/")
                 if (split.length >= 2) {
                     var html = []
-                    html.push(`<div class='packagetitle'>${split[split.length-1]}</div>`)
+                    let id2 = idName(id)
+                    html.push(`<div id="${id2}" class='packagetitle'>${split[split.length-1]}</div>`)
                     html.push(`<div class='packageowner'>${split[split.length-2]}`)
                     html.push(`<a class='packagelink' href='${name}'><img src='images/pagelink.svg'/></a></div>`)
                     return html.join("")
@@ -268,7 +274,7 @@
                 if (direction == "to") {
                     packagesToDisplay = packagesToDisplay.slice(position*maxPackages,(position+1)*maxPackages)
                 }
-                var rows = packagesToDisplay.map(function(name){return [{v:`${name}#${nodeId2}`, f:renderName(name)}, rootNameCount, tooltipForName(name)]})
+                var rows = packagesToDisplay.map(function(name){return [{v:`${name}#${nodeId2}`, f:renderName(name, `${name}#${nodeId2}`)}, rootNameCount, tooltipForName(name)]})
 
                 stack.push(rootName)
                 // if we have already display a complete tree for a package and it has more than 4 children show expand box
@@ -276,7 +282,8 @@
                     let stackString = stack.join("#")
                     let name = `__expand__#${stackString}`
                     if (name != expandedNode) {
-                        data.addRow([{v:name, f:`<h1 class="expand">\u2193</h1>`}, rootNameCount, "Show more ..."])
+                        let row = data.addRow([{v:name, f:`<h1 class="expand">\u2193</h1>`}, rootNameCount, "Show more ..."])
+                        //data.setRowProperty(row, "parent", )
                         stack.pop()
                         return
                     }
@@ -313,7 +320,7 @@
 
                 let root = dependencyData[rootName]
                 nodeId = 0
-                chart_data.addRows([[{v:rootName, f:renderName(rootName)}, "", tooltipForName(rootName)]]);
+                chart_data.addRows([[{v:rootName, f:renderName(rootName, rootName)}, "", tooltipForName(rootName)]]);
                 addChildrenRows(chart_data, rootName, 8, rootName, packagesAdded)
                 console.log(`Number of nodes ${nodeId}`)
                 // set background
@@ -322,6 +329,9 @@
 
                 // Draw the chart, setting the allowHtml option to true for the tooltips.
                 chart.draw(chart_data, {allowHtml:true, nodeClass:"chart-node", selectedNodeClass:"chart-node"});
+
+                //var position = $('#httpsgithubcomvaporfluent73').offset();
+                //console.log(position)
             }
         </script>
     </head>
