@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/swift-server/async-http-client",
         "state": {
           "branch": null,
-          "revision": "64851a1a0a2a9e8fa7ae7b3508ce46a1da4a2e1d",
-          "version": "1.0.0-alpha.2"
+          "revision": "48e284d1ea6d0e8baac1af1c4ad8bd298670caf6",
+          "version": "1.0.1"
         }
       },
       {
@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/apple/swift-llbuild.git",
         "state": {
           "branch": "master",
-          "revision": "ba683491966a4316a642aa0aa382fbb2f21f1cdb",
+          "revision": "71cc95eac241665099d3fd2532285007230bca96",
           "version": null
         }
       },
@@ -42,8 +42,17 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "790827800d6af12ca6a8b1dca7a9072606fd2a1e",
-          "version": "2.7.0"
+          "revision": "4409b57d4c0c40d41ac2b320fccf02e4d451e3db",
+          "version": "2.13.0"
+        }
+      },
+      {
+        "package": "swift-nio-extras",
+        "repositoryURL": "https://github.com/apple/swift-nio-extras.git",
+        "state": {
+          "branch": null,
+          "revision": "b4dbfacff47fb8d0f9e0a422d8d37935a9f10570",
+          "version": "1.4.0"
         }
       },
       {
@@ -51,8 +60,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": null,
-          "revision": "f5dd7a60ff56f501ff7bf9be753e4b1875bfaf20",
-          "version": "2.4.0"
+          "revision": "cf54f5c1db1c3740a6c7d662dc8569c150c3846c",
+          "version": "2.6.0"
         }
       },
       {

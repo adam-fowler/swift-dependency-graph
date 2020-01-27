@@ -60,6 +60,11 @@ public class Packages {
     public init(packages: Container) throws {
         self.packages = packages
         self.loader = try PackageLoader(onAdd: self.add, onError: self.addLoadingError)
+
+        // flag all packages as read
+        for key in self.packages.keys {
+            self.packages[key]?.readPackageSwift = true
+        }
     }
     
     /// add a package
@@ -127,7 +132,7 @@ public class Packages {
             let name = Packages.cleanupName(name)
             return packages[name] == nil ? name : nil
         }
-        
+
         var iterations = iterations
         repeat {
             try loader.loadPackages(packageNames).wait()
