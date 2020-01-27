@@ -48,6 +48,10 @@ public struct Package : Codable {
     }
 }
 
+enum PackagesError : Swift.Error {
+    case corruptDependencies
+}
+
 public class Packages {
     public typealias Container = [String: Package]
     public private(set) var packages : Container
@@ -146,6 +150,21 @@ public class Packages {
         } while(packageNames.count > 0)
     }
     
+    public func removePackage(_ packageName: String) throws {
+        let name = Packages.cleanupName(packageName)
+        guard let package = packages[name] else { return }
+        // when you remove a package you have to remove it from its dependencies dependents lists
+        for d in package.dependencies {
+            guard var dependency = packages[d] else { throw PackagesError.corruptDependencies }
+            dependency.dependents.remove(name)
+        }
+        // when you remove a package you have to remove it dependents
+        for d in package.dependents {
+            try removePackage(d)
+        }
+        packages[name] = nil
+    }
+    
     /// save dependency file
     public func save(filename: String) throws {
         let data = try JSONEncoder().encode(packages)
@@ -153,7 +172,7 @@ public class Packages {
     }
 
     /// convert error to string
-    static func stringFromError(_ error: Error) -> String {
+    static func stringFromError(_ error: Swift.Error) -> String {
         switch error {
         case PackageLoaderError.invalidToolsVersion:
             return "Requires later version of Swift"

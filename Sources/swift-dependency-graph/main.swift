@@ -24,7 +24,7 @@ class System {
     }
 }
 
-func run(_ file: String, patch: Bool) {
+func run(_ file: String, patch: Bool, rebuild: String) {
     let startTime = Date()
     let id = System.preventSleep(reason: "Swift Dependency Graph")
 
@@ -37,6 +37,7 @@ func run(_ file: String, patch: Bool) {
             let data = try Data(contentsOf: URL(fileURLWithPath: file))
             let packageList = try JSONDecoder().decode(Packages.Container.self, from: data)
             packages = try Packages(packages: packageList)
+            try packages.removePackage(rebuild)
         } else {
             packages = try Packages()
         }
@@ -55,7 +56,8 @@ let rootPath = #file.split(separator: "/", omittingEmptySubsequences: false).dro
 
 command(
     Option<String>("output", default: rootPath + "/dependencies.json"),
-    Flag("patch", default:true, flag:"p", description: "Patch dependencies json")
-) { path, patch in
-    run(path, patch: patch)
+    Flag("patch", default:true, flag:"p", description: "Patch dependencies json"),
+    Option<String>("rebuild", default: "")
+) { path, patch, rebuild in
+    run(path, patch: patch, rebuild: rebuild)
 }.run()
