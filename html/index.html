@@ -199,7 +199,7 @@
 
             function loadDependencies() {
                 $.ajax({
-                       url : "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/master/dependencies.json?v2",
+                       url : "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/master/dependencies.json?v3",
                        success : function (data) {
                            dependencyData = JSON.parse(data)
                            let keys = Object.keys(dependencyData)
