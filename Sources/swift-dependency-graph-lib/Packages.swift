@@ -36,6 +36,7 @@ public struct Package : Codable {
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        // enocde dependencies and dependents in alphabetical order
         try container.encode(dependencies.map{$0}.sorted(by:{ return $0.split(separator: "/").last! < $1.split(separator: "/").last! }), forKey: .dependencies)
         try container.encode(dependents.map{$0}.sorted(by:{ return $0.split(separator: "/").last! < $1.split(separator: "/").last! }), forKey: .dependents)
         try container.encode(error, forKey: .error)
@@ -123,6 +124,9 @@ public class Packages {
     }
     
     /// import packages.json file
+    /// - Parameters:
+    ///   - url: URL of packages json file
+    ///   - iterations: Number of iterations we will run emptying the package array after having added dependencies
     public func `import`(url: String, iterations : Int = 100) throws {
         // Load package names from url
         let packageNames = try loader.load(url: url, packages: self).map { Packages.cleanupName($0)}
@@ -130,6 +134,10 @@ public class Packages {
         try loadPackages(packageNames, iterations: iterations)
     }
     
+    /// Load list of packages
+    /// - Parameters:
+    ///   - packageNames: List of package URLs
+    ///   - iterations: Number of iterations we will run emptying the package array after having added dependencies
     func loadPackages(_ packageNames: [String], iterations : Int = 100) throws {
         // remove duplicate packages, sort and remove packages we have already loaded
         var packageNames = Array(Set(packageNames)).sorted().compactMap { (name)->String? in
@@ -150,6 +158,8 @@ public class Packages {
         } while(packageNames.count > 0)
     }
     
+    /// Remove package from dependency set, also needs to remove all of its dependecies
+    /// - Parameter packageName: URL of package
     public func removePackage(_ packageName: String) throws {
         let name = Packages.cleanupName(packageName)
         guard let package = packages[name] else { return }
@@ -163,6 +173,18 @@ public class Packages {
             try removePackage(d)
         }
         packages[name] = nil
+    }
+    
+    /// Remove packages filtered by including a string
+    /// - Parameter filteredBy: String that packages need to contain to be removed
+    public func removePackages(filteredBy: String) throws {
+        let packages = self.packages.compactMap { (entry)->String? in
+            if entry.key.contains(filteredBy) {
+                return entry.key
+            }
+            return nil
+        }
+        try packages.forEach { try self.removePackage($0); print("Rebulding \($0)") }
     }
     
     /// save dependency file

@@ -24,7 +24,7 @@ class System {
     }
 }
 
-func run(_ file: String, patch: Bool, rebuild: String) {
+func run(_ file: String, rebuildAll: Bool, rebuild: String?) {
     let startTime = Date()
     let id = System.preventSleep(reason: "Swift Dependency Graph")
 
@@ -33,11 +33,13 @@ func run(_ file: String, patch: Bool, rebuild: String) {
     do {
         let packages: Packages
         // load json that is already there
-        if patch {
+        if !rebuildAll {
             let data = try Data(contentsOf: URL(fileURLWithPath: file))
             let packageList = try JSONDecoder().decode(Packages.Container.self, from: data)
             packages = try Packages(packages: packageList)
-            try packages.removePackage(rebuild)
+            if let rebuild = rebuild {
+                try packages.removePackages(filteredBy: rebuild)
+            }
         } else {
             packages = try Packages()
         }
@@ -56,8 +58,8 @@ let rootPath = #file.split(separator: "/", omittingEmptySubsequences: false).dro
 
 command(
     Option<String>("output", default: rootPath + "/dependencies.json"),
-    Flag("patch", default:true, flag:"p", description: "Patch dependencies json"),
-    Option<String>("rebuild", default: "")
-) { path, patch, rebuild in
-    run(path, patch: patch, rebuild: rebuild)
+    Flag("rebuildall", default:false, flag:"r", description: "Rebuild all of dependencies json"),
+    Option<String?>("rebuild", default: nil)
+) { path, rebuildAll, rebuild in
+    run(path, rebuildAll: rebuildAll, rebuild: rebuild)
 }.run()
