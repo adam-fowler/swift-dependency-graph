@@ -190,7 +190,9 @@ public class Packages {
     
     /// save dependency file
     public func save(filename: String) throws {
-        let data = try JSONEncoder().encode(packages)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let data = try encoder.encode(packages)
         try data.write(to: URL(fileURLWithPath: filename))
     }
 
