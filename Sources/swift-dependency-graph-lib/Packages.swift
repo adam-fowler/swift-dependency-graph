@@ -75,9 +75,9 @@ public class Packages {
     /// add a package
     func add(name: String, package: Package) {
         let name = Packages.cleanupName(name)
-        semaphore.wait()
+        lock.lock()
         defer {
-            semaphore.signal()
+            lock.unlock()
         }
         
         var package = package
@@ -107,9 +107,9 @@ public class Packages {
     public func addLoadingError(name: String, error: Error) {
         print("Failed to load package from \(name) error: \(Packages.stringFromError(error))")
         let name = Packages.cleanupName(name)
-        semaphore.wait()
+        lock.lock()
         defer {
-            semaphore.signal()
+            lock.unlock()
         }
         
         // if package already exists
@@ -132,6 +132,7 @@ public class Packages {
         let packageNames = try loader.load(url: url, packages: self).map { Packages.cleanupName($0)}
         
         try loadPackages(packageNames, iterations: iterations)
+        
     }
     
     /// Load list of packages
@@ -233,7 +234,7 @@ public class Packages {
         return packageName
     }
     
-    let semaphore = DispatchSemaphore(value: 1)
+    let lock = NSLock()
     var loader: PackageLoader!
     
 

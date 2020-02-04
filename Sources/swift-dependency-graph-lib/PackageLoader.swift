@@ -33,7 +33,7 @@ class PackageLoader {
 
     init(onAdd: @escaping (String, Package)->(), onError: @escaping (String, Error)->() = {_,_ in }) throws {
         self.manifestLoader = try PackageManifestLoader()
-        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.httpLoader = HTTPLoader(eventLoopGroup: eventLoopGroup)
         self.onAdd = onAdd
         self.onError = onError
@@ -59,21 +59,14 @@ class PackageLoader {
     
     /// load packages from array of package names
     func loadPackages(_ packages: [String]) -> Future<Void> {
-        func addStartingFrom(index: Int) -> Future<Void> {
-            if index >= packages.count {
+        let futures = packages.map { name in return addPackage(url: name)
+            .map { return () }
+            .flatMapError { (error)->Future<Void> in
+                self.onError(name, error)
                 return self.eventLoopGroup.next().makeSucceededFuture(Void())
             }
-            let name = packages[index]
-            return addPackage(url: name)
-                .flatMapError { (error)->Future<Void> in
-                    self.onError(name, error)
-                    return self.eventLoopGroup.next().makeSucceededFuture(Void())
-                }
-                .flatMap {
-                    return addStartingFrom(index: index+1)
-            }
         }
-        return addStartingFrom(index: 0)
+        return EventLoopFuture.whenAllComplete(futures, on: eventLoopGroup.next()).map {_ in return () }
     }
 
     /// add a package, works out default branch and calls add package with branch name, then calls onAdd callback
