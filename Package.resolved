@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/apple/swift-llbuild.git",
         "state": {
           "branch": "master",
-          "revision": "71cc95eac241665099d3fd2532285007230bca96",
+          "revision": "435e72e01369ed1397fa01e9f564a299c7e2095a",
           "version": null
         }
       },
@@ -68,8 +68,8 @@
         "package": "SwiftPM",
         "repositoryURL": "https://github.com/apple/swift-package-manager",
         "state": {
-          "branch": "swift-5.1-DEVELOPMENT-SNAPSHOT-2020-01-23-a",
-          "revision": "331fa5cb245be1e4e16640f20f123eb3461eeced",
+          "branch": "swift-5.1.5-RELEASE",
+          "revision": "61ed0e0603de2b774d9ccd95905e9f6bdfbafa2f",
           "version": null
         }
       }
