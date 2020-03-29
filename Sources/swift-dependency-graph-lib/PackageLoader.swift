@@ -7,11 +7,9 @@
 
 import Foundation
 import NIO
-import Basic
 import Workspace
 import PackageLoading
 import PackageModel
-import SPMUtility
 
 enum PackageLoaderError : Error {
     case invalidUrl
@@ -264,7 +262,8 @@ public class PackageManifestLoader {
             let manifest = try loader.load(
                 package: AbsolutePath("/Package/"),
                 baseURL: AbsolutePath("/Package/").pathString,
-                manifestVersion: toolsVersion.manifestVersion,
+                toolsVersion: toolsVersion,
+                packageKind: .local,
                 fileSystem: fs
             )
             
