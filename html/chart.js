@@ -89,7 +89,7 @@ function createChart() {
 
 function loadDependencies() {
     $.ajax({
-           url : "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/master/dependencies.json?v4",
+           url : "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/test-dependencies/dependencies.json?v4",
            success : function (data) {
                dependencyData = JSON.parse(data)
                let keys = Object.keys(dependencyData)
