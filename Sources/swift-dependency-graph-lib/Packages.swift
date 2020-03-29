@@ -91,7 +91,7 @@ public class Packages {
         for dependency in package.dependencies {
             // guard against invalid urls. If invalid remove from dependency list
             guard PackageLoader.isValidUrl(url: dependency) else {
-                print("Error: removed dependency as the URL was invalid")
+                print("Error: removed dependency as the URL(\(dependency) was invalid")
                 packages[name]?.dependencies.remove(dependency)
                 continue
             }
@@ -206,7 +206,7 @@ public class Packages {
         case HTTPLoader.HTTPError.failedToLoad(_):
             return "FailedToLoad"
         default:
-            return "Unknown"
+            return "\(error)"
         }
     }
     

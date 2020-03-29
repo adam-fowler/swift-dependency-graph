@@ -25,6 +25,10 @@ public class HTTPLoader {
         self.client = HTTPClient(eventLoopGroupProvider: .shared(self.eventLoopGroup))
     }
     
+    func syncShutdown() throws {
+        try client.syncShutdown()
+    }
+    
     public func get(url: String) -> EventLoopFuture<HTTPClient.Response> {
         return client.get(url: url, deadline: .now() + .seconds(5)).flatMapThrowing { (response)->HTTPClient.Response in
             guard response.status != .movedPermanently else {throw HTTPError.moved(response.headers["Location"].first)}

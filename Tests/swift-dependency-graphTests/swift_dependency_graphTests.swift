@@ -10,6 +10,19 @@ func attempt(function: () throws -> ()) {
 }
 
 final class swift_dependency_graphTests: XCTestCase {
+    
+    var packageLoader: PackageLoader!
+    
+    override func setUp() {
+        XCTAssertNil(self.packageLoader)
+        XCTAssertNoThrow(self.packageLoader = try PackageLoader(onAdd: { _,_ in }))
+    }
+    
+    override func tearDown() {
+        XCTAssertNoThrow(try self.packageLoader.syncShutdown())
+        self.packageLoader = nil
+    }
+    
     func testPackagesCleanupName() {
         XCTAssertEqual(Packages.cleanupName("https://github.com/user/repository"), "https://github.com/user/repository")
         XCTAssertEqual(Packages.cleanupName("https://github.com/user/repository/"), "https://github.com/user/repository")
@@ -18,96 +31,96 @@ final class swift_dependency_graphTests: XCTestCase {
 
     func testLoadPackageTest() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/adam-fowler/swift-dependency-graph").wait()
+            try packageLoader.addPackage(url: "https://github.com/adam-fowler/swift-dependency-graph").wait()
         }
     }
     
     func testLoadRedirectPackageTest() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "http://github.com/adam-fowler/swift-dependency-graph").wait()
+            try packageLoader.addPackage(url: "http://github.com/adam-fowler/swift-dependency-graph").wait()
         }
     }
     
     func testLoadGitlabWithUppercaseLetterPackageTest() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://gitlab.com/Mordil/swift-redi-stack").wait()
+            try packageLoader.addPackage(url: "https://gitlab.com/Mordil/swift-redi-stack").wait()
         }
     }
     
     func testLoadGitAtGitHubPackageTest() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "git@github.com:adam-fowler/swift-dependency-graph").wait()
+            try packageLoader.addPackage(url: "git@github.com:adam-fowler/swift-dependency-graph").wait()
         }
     }
     
     func testLoadPackageV4Test() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/getguaka/env.git").wait()
+            try packageLoader.addPackage(url: "https://github.com/getguaka/env.git").wait()
         }
     }
     
     func testLoadPackageV4_2Test() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/apple/swift-protobuf").wait()
+            try packageLoader.addPackage(url: "https://github.com/apple/swift-protobuf").wait()
         }
     }
     
     // invalid manifest (trying to load Package.swift when it is for swift 3)
     func testLoadPackageSwiftV4Test() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/jdhealy/prettycolors").wait()
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/vapor/json.git").wait()
+            try packageLoader.addPackage(url: "https://github.com/jdhealy/prettycolors").wait()
+            try packageLoader.addPackage(url: "https://github.com/vapor/json.git").wait()
         }
     }
     
     func testLoadPackageV5_1Test() {
         attempt {
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Jimmy-Lee/Networking.git").wait()
+            try packageLoader.addPackage(url: "https://github.com/Jimmy-Lee/Networking.git").wait()
         }
     }
     
     func testOnReleaseNotMaster() {
         attempt {
             // Package.swift on master branch is corrupt but release branch version is fine
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/httpswift/swifter.git").wait()
+            try packageLoader.addPackage(url: "https://github.com/httpswift/swifter.git").wait()
             // no master branch but there is a release with package available
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/tomlokhorst/xcodeedit").wait()
+            try packageLoader.addPackage(url: "https://github.com/tomlokhorst/xcodeedit").wait()
         }
     }
 
     func testReleasesInvalidVersionTags() {
         attempt {
             // Release numbers have a v suffix
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Bilue/ContentFittingWebView").wait()
+            try packageLoader.addPackage(url: "https://github.com/Bilue/ContentFittingWebView").wait()
         }
     }
     
     func testReleasesNumbersNotFormattedCorrectly() {
         attempt {
             // Release numbers are incorrect using major.minor not major.minor.patch
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Alecrim/AlecrimAsyncKit").wait()
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/alexdrone/Store").wait()
+            try packageLoader.addPackage(url: "https://github.com/Alecrim/AlecrimAsyncKit").wait()
+            try packageLoader.addPackage(url: "https://github.com/alexdrone/Store").wait()
         }
     }
     
     func testReleaseNumbersThatGoHigherThanNine() {
         attempt {
             // Releases are sorted alphabetically. Need to create version object for release and sort those
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Carthage/Commandant").wait()
+            try packageLoader.addPackage(url: "https://github.com/Carthage/Commandant").wait()
         }
     }
 
     func testOnMasterButNotRelease() {
         attempt {
             // Package.swift doesn't exist in the branch, while there is one on master
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/abdullahselek/TakeASelfie").wait()
+            try packageLoader.addPackage(url: "https://github.com/abdullahselek/TakeASelfie").wait()
         }
     }
     
     func testLoadNonMasterPackageTest() {
         attempt {
             // Package.swift not on master and there are no releases
-            try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/Flinesoft/AnyMenu.git").wait()
+            try packageLoader.addPackage(url: "https://github.com/Flinesoft/AnyMenu.git").wait()
         }
     }
     
@@ -122,15 +135,22 @@ final class swift_dependency_graphTests: XCTestCase {
         try packages.loadPackages(["https://github.com/adam-fowler/swift-dependency-graph"])
         try packages.loadPackages(["https://github.com/adam-fowler/swift-dependency-graph"])
     }
-    
-    func testLoadErroringPackage() {
+
+    func testLoadPackageWithSlashInDefaultBranch() {
         attempt {
-            //
-            //try PackageLoader(onAdd: { _,_ in }).addPackage(url: "https://github.com/kthomas/jwtdecode.swift").wait()
+            try packageLoader.addPackage(url: "https://github.com/openkitten/bson").wait()
         }
     }
-        
+
+    func testLoadErroringPackage() {
+        attempt {
+        }
+    }
     /*
+
+     */
+    /*
+     Failed to load package from https://github.com/mattt/surge error: FailedToLoad (no Package.swift on default branch)
      Failed to load package from https://github.com/enablex/VCXSocket.git error: FailedToLoad Doesn't exist
      Failed to load package from https://github.com/mdaxter/bignumgmp.git error: InvalidManifest empty Package.swift
      Failed to load package from https://github.com/vzsg/ed25519.git error: InvalidManifest empty Package.swift

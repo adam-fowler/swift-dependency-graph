@@ -23,18 +23,26 @@ enum PackageLoaderError : Error {
 
 class PackageLoader {
     
-    let manifestLoader : PackageManifestLoader
-    let eventLoopGroup : EventLoopGroup
-    let httpLoader : HTTPLoader
-    let onAdd : (String, Package)->()
-    let onError : (String, Error)->()
+    let threadPool: NIOThreadPool
+    let manifestLoader: PackageManifestLoader
+    let eventLoopGroup: EventLoopGroup
+    let httpLoader: HTTPLoader
+    let onAdd: (String, Package)->()
+    let onError: (String, Error)->()
 
     init(onAdd: @escaping (String, Package)->(), onError: @escaping (String, Error)->() = {_,_ in }) throws {
+        self.threadPool = NIOThreadPool(numberOfThreads: System.coreCount)
+        self.threadPool.start()
         self.manifestLoader = try PackageManifestLoader()
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.httpLoader = HTTPLoader(eventLoopGroup: eventLoopGroup)
         self.onAdd = onAdd
         self.onError = onError
+    }
+    
+    func syncShutdown() throws {
+        try httpLoader.syncShutdown()
+        try eventLoopGroup.syncShutdownGracefully()
     }
     
     /// load package names from json
@@ -101,7 +109,7 @@ class PackageLoader {
                 return self.httpLoader.getBody(url: packageUrlToLoad)
             }
             .flatMap { (buffer)->Future<[String]> in
-                return self.eventLoopGroup.next().submit {
+                return self.threadPool.runIfActive(eventLoop: self.eventLoopGroup.next()) {
                     return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
                 }
             }
@@ -110,7 +118,7 @@ class PackageLoader {
                 packageUrlToLoad = repositoryUrl + "/Package@swift-4.2.swift"
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
-                        return self.eventLoopGroup.next().submit {
+                        return self.threadPool.runIfActive(eventLoop: self.eventLoopGroup.next()) {
                             return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
                         }
                 }
@@ -119,7 +127,7 @@ class PackageLoader {
                 packageUrlToLoad = repositoryUrl + "/Package@swift-4.swift"
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
-                        return self.eventLoopGroup.next().submit {
+                        return self.threadPool.runIfActive(eventLoop: self.eventLoopGroup.next()) {
                             return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
                         }
                 }
@@ -131,15 +139,15 @@ class PackageLoader {
     }
 
     func getDefaultBranch(url: String) -> Future<String> {
-        return eventLoopGroup.next().submit { ()->String in
+        return threadPool.runIfActive(eventLoop: eventLoopGroup.next()) { ()->String in
             guard let lsRemoteOutput = try? Process.checkNonZeroExit(
                 args: Git.tool, "ls-remote", "--symref", url, "HEAD", environment: Git.environment).spm_chomp() else {return "master"}
             // split into tokens separated by space. The second token is the branch ref.
             let branchRefTokens = lsRemoteOutput.components(separatedBy: CharacterSet.whitespacesAndNewlines)
             var branch : Substring? = nil
-            if branchRefTokens.count > 1 {
+            if branchRefTokens.count > 1, branchRefTokens[1].hasPrefix("refs/heads/") {
                 // split branch ref by '/'. Last element is branch name
-                branch = branchRefTokens[1].split(separator: "/").last
+                branch = branchRefTokens[1].dropFirst(11)
             }
             if let branch = branch {
                 return String(branch)
@@ -153,7 +161,7 @@ class PackageLoader {
         let regularExpressionXX = try! NSRegularExpression(pattern: "[0-9]+\\.[0-9]+$", options: [])
         // Look into getting versions
         // git ls-remote --tags <repository>.
-        return eventLoopGroup.next().submit { ()->String? in
+        return threadPool.runIfActive(eventLoop: eventLoopGroup.next()) { ()->String? in
             guard let lsRemoteOutput = try? Process.checkNonZeroExit(
                 args: Git.tool, "ls-remote", "--tags", url, environment: Git.environment).spm_chomp() else {return nil}
             let tags = lsRemoteOutput.split(separator: "\n").compactMap { $0.split(separator:"/").last }
@@ -274,7 +282,7 @@ public class PackageManifestLoader {
         } catch is ManifestParseError {
             throw PackageLoaderError.invalidManifest
         } catch {
-            print(error)
+            print("Error loading \(url) \(error)")
             throw error
         }
     }
