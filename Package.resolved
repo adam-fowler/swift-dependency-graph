@@ -24,7 +24,7 @@
         "repositoryURL": "https://github.com/apple/swift-llbuild.git",
         "state": {
           "branch": "swift-5.2-branch",
-          "revision": "fb7ebf0b06c0d7c45ca8e18b3371424503a38b5c",
+          "revision": "d6dd04202d509f91d61aef89236db0da8f27d356",
           "version": null
         }
       },
