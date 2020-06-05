@@ -28,7 +28,7 @@ let rootPath = #file.split(separator: "/", omittingEmptySubsequences: false).dro
 
 struct SwiftDependencyGraph: ParsableCommand {
     // output path
-    @Option(default: rootPath + "/dependencies.json") var output: String
+    @Option(default: rootPath + "/html/dependencies.json") var output: String
     
     // rebuild all flag
     @Flag(help: "Rebuild all packages") var rebuildAll: Bool

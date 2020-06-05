@@ -7,6 +7,7 @@ var chart_data
 var direction = "on"
 var expandedNode
 var dependencyData
+var dependencyFile = "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/master/dependencies.json?v4"
 var rootName = "https://github.com/adam-fowler/swift-dependency-graph"
 var nodeId = 0
 var nodePositions = {}
@@ -89,7 +90,7 @@ function createChart() {
 
 function loadDependencies() {
     $.ajax({
-           url : "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/master/dependencies.json?v4",
+           url : dependencyFile,
            success : function (data) {
                dependencyData = JSON.parse(data)
                let keys = Object.keys(dependencyData)
