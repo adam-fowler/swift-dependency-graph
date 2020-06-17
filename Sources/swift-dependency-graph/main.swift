@@ -45,7 +45,7 @@ struct SwiftDependencyGraph: ParsableCommand {
             }
         }
 
-        let url = "https://raw.githubusercontent.com/daveverwer/SwiftPMLibrary/master/packages.json"
+        let url = "https://raw.githubusercontent.com/SwiftPackageIndex/PackageList/main/packages.json"
 
         do {
             let packages: Packages
