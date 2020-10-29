@@ -30,7 +30,7 @@ public class HTTPLoader {
     }
     
     public func get(url: String) -> EventLoopFuture<HTTPClient.Response> {
-        return client.get(url: url, deadline: .now() + .seconds(5)).flatMapThrowing { (response)->HTTPClient.Response in
+        return client.get(url: url, deadline: .now() + .seconds(30)).flatMapThrowing { (response)->HTTPClient.Response in
             guard response.status != .movedPermanently else {throw HTTPError.moved(response.headers["Location"].first)}
             guard response.status != .found else {throw HTTPError.moved(response.headers["Location"].first)}
             guard response.status == .ok else {throw HTTPError.failedToLoad(url)}
