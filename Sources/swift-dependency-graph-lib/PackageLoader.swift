@@ -239,7 +239,7 @@ public class PackageManifestLoader {
     let loader: ManifestLoader
     
     public init() throws {
-        self.resources = try UserManifestResources(swiftCompiler: swiftCompiler)
+        self.resources = try UserManifestResources(swiftCompiler: swiftCompiler, swiftCompilerFlags: [])
         self.loader = ManifestLoader(manifestResources: resources)
     }
     
