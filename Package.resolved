@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/swift-server/async-http-client.git",
         "state": {
           "branch": null,
-          "revision": "4b4d6605aa2e4f0c2ae3c7563795ae3bec259fff",
-          "version": "1.2.1"
+          "revision": "0a8dddbe15cd72f7bb5e47951fb7c1eb0836dfc2",
+          "version": "1.2.2"
         }
       },
       {
@@ -24,7 +24,7 @@
         "repositoryURL": "https://github.com/apple/swift-driver.git",
         "state": {
           "branch": "main",
-          "revision": "62882f4590acb1bcb8726caef1d781892c0935d9",
+          "revision": "6c9985a3b77b7ace9e698e8aa8265ba5b82339e4",
           "version": null
         }
       },
@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/apple/swift-llbuild.git",
         "state": {
           "branch": "main",
-          "revision": "5b5421a12fea9c5ec63fd9a797c05f7aebd8142b",
+          "revision": "0a37219fcc1e70b3e6c1953eb8975d1d8a3dd56e",
           "version": null
         }
       },
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "c3e2359c55cd8b47207ab7363b77c9c398a95294",
-          "version": "2.23.0"
+          "revision": "43931b7a7daf8120a487601530c8bc03ce711992",
+          "version": "2.25.1"
         }
       },
       {
@@ -69,8 +69,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": null,
-          "revision": "eb102ad32add8638410e37a69bc815ea11379813",
-          "version": "2.10.0"
+          "revision": "62bf5083df970e67c886210fa5b857eacf044b7c",
+          "version": "2.10.2"
         }
       },
       {
@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-transport-services.git",
         "state": {
           "branch": null,
-          "revision": "bb56586c4cab9a79dce6ec4738baddb5802c5de7",
-          "version": "1.9.0"
+          "revision": "5a352330c09a323e59ebd99afdf4ca3964c217bc",
+          "version": "1.9.1"
         }
       },
       {
@@ -87,7 +87,7 @@
         "repositoryURL": "https://github.com/apple/swift-package-manager.git",
         "state": {
           "branch": "main",
-          "revision": "1ab1ede038c4897afab8602eedafa0443abb8724",
+          "revision": "ec407ac14738bf132b23441aa9435a919124eda6",
           "version": null
         }
       },
@@ -96,7 +96,7 @@
         "repositoryURL": "https://github.com/apple/swift-tools-support-core.git",
         "state": {
           "branch": "main",
-          "revision": "be605ed00206b762a4911f5c142f019140ee29a5",
+          "revision": "2e1e553a57c1fa33f29527b9be9ef422ecde792b",
           "version": null
         }
       },
@@ -105,8 +105,8 @@
         "repositoryURL": "https://github.com/jpsim/Yams.git",
         "state": {
           "branch": null,
-          "revision": "88caa2e6fffdbef2e91c2022d038576062042907",
-          "version": "4.0.0"
+          "revision": "1bce5b89a11912fb8a8c48bd404bd24979472f27",
+          "version": "4.0.3"
         }
       }
     ]

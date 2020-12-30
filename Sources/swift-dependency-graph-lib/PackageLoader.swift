@@ -29,6 +29,7 @@ class PackageLoader {
     let httpLoader: HTTPLoader
     let onAdd: (String, Package)->()
     let onError: (String, Error)->()
+    let taskQueue: TaskQueue<[String]>
 
     init(onAdd: @escaping (String, Package)->(), onError: @escaping (String, Error)->() = {_,_ in }) throws {
         self.threadPool = NIOThreadPool(numberOfThreads: System.coreCount)
@@ -38,6 +39,7 @@ class PackageLoader {
         self.httpLoader = HTTPLoader(eventLoopGroup: eventLoopGroup)
         self.onAdd = onAdd
         self.onError = onError
+        self.taskQueue = .init(maxConcurrentTasks: 8, on: eventLoopGroup.next())
     }
     
     func syncShutdown() throws {
@@ -79,11 +81,11 @@ class PackageLoader {
     func addPackage(url: String) -> Future<Void> {
         // get package.swift from default branch
         return self.getDefaultBranch(url: url).flatMap { (branch)->Future<[String]> in
-            return self.addPackage(url: url, version: branch)
-            }
-            .map { buffer in
-                print("Adding \(url)")
-                self.onAdd(url, Package(dependencies: buffer))
+            return self.taskQueue.submitTask { self.addPackage(url: url, version: branch) }
+        }
+        .map { buffer in
+            print("Adding \(url)")
+            self.onAdd(url, Package(dependencies: buffer))
         }
     }
     
@@ -109,27 +111,21 @@ class PackageLoader {
                 return self.httpLoader.getBody(url: packageUrlToLoad)
             }
             .flatMap { (buffer)->Future<[String]> in
-                return self.threadPool.runIfActive(eventLoop: self.eventLoopGroup.next()) {
-                    return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
-                }
+                return self.manifestLoader.load(buffer, url: packageUrlToLoad, on: self.eventLoopGroup.next())
             }
             .flatMapError { (error)->Future<[String]> in
                 errorPassedDown = error
                 packageUrlToLoad = repositoryUrl + "/Package@swift-4.2.swift"
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
-                        return self.threadPool.runIfActive(eventLoop: self.eventLoopGroup.next()) {
-                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
-                        }
+                        return self.manifestLoader.load(buffer, url: packageUrlToLoad, on: self.eventLoopGroup.next())
                 }
             }
             .flatMapError { (error)->Future<[String]> in
                 packageUrlToLoad = repositoryUrl + "/Package@swift-4.swift"
                 return self.httpLoader.getBody(url: packageUrlToLoad)
                     .flatMap { buffer in
-                        return self.threadPool.runIfActive(eventLoop: self.eventLoopGroup.next()) {
-                            return try self.manifestLoader.load(buffer, url: packageUrlToLoad)
-                        }
+                        return self.manifestLoader.load(buffer, url: packageUrlToLoad, on: self.eventLoopGroup.next())
                 }
             }
             .flatMapErrorThrowing { error in
@@ -254,37 +250,50 @@ public class PackageManifestLoader {
         return AbsolutePath(string)
     }()
 
-    public func load(_ buffer: [UInt8], url: String) throws -> [String] {
+    public func load(_ buffer: [UInt8], url: String, on eventLoop: EventLoop) -> EventLoopFuture<[String]> {
+        let promise = eventLoop.makePromise(of: [String].self)
         let fs = InMemoryFileSystem()
-        try fs.createDirectory(AbsolutePath("/Package"))
-        try fs.writeFileContents(AbsolutePath("/Package/Package.swift"), bytes: ByteString(buffer))
-        
+
         print("Loading manifest from \(url)")
         
         do {
+            try fs.createDirectory(AbsolutePath("/Package"))
+            try fs.writeFileContents(AbsolutePath("/Package/Package.swift"), bytes: ByteString(buffer))
+
             var toolsVersion = try ToolsVersionLoader().load(at: AbsolutePath("/Package/"), fileSystem: fs)
             if toolsVersion < ToolsVersion.minimumRequired {
                 print("error: Package version is below minimum, trying minimum")
                 toolsVersion = .minimumRequired
             }
-            let manifest = try loader.load(
+            loader.load(
                 package: AbsolutePath("/Package/"),
                 baseURL: AbsolutePath("/Package/").pathString,
                 toolsVersion: toolsVersion,
                 packageKind: .local,
-                fileSystem: fs
-            )
-            
-            let dependencies = manifest.dependencies.map {$0.url}
-            return dependencies
-        } catch PackageLoaderError.invalidManifest {
-            throw PackageLoaderError.invalidManifest
-        } catch is ManifestParseError {
-            throw PackageLoaderError.invalidManifest
+                fileSystem: fs,
+                on: DispatchQueue.global()
+            ) { result in
+                switch result {
+                case .failure(let error):
+                    switch error {
+                    case PackageLoaderError.invalidManifest:
+                        promise.fail(error)
+                    case is ManifestParseError:
+                        promise.fail(PackageLoaderError.invalidManifest)
+                    default:
+                        print("Error loading \(url) \(error)")
+                        promise.fail(error)
+                    }
+                case .success(let manifest):
+                    let dependencies = manifest.dependencies.map {$0.url}
+                    promise.succeed(dependencies)
+                }
+            }
         } catch {
             print("Error loading \(url) \(error)")
-            throw error
+            promise.fail(error)
         }
+        return promise.futureResult
     }
 }
 
