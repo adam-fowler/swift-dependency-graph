@@ -7,7 +7,7 @@ var chart_data
 var direction = "on"
 var expandedNode
 var dependencyData
-var dependencyFile = "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/main/html/dependencies.json?v7"
+var dependencyFile = "https://raw.githubusercontent.com/adam-fowler/swift-dependency-graph/main/html/dependencies.json?v=8"
 var rootName = "https://github.com/adam-fowler/swift-dependency-graph"
 var nodeId = 0
 var nodePositions = {}
