@@ -11,7 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.0.0"),
-        .package(name: "SwiftPM", url: "https://github.com/apple/swift-package-manager.git", .branch("main")),
+        .package(name: "SwiftPM", url: "https://github.com/apple/swift-package-manager.git", .branch("swift-5.4-RELEASE")),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.3.0")
     ],
     targets: [
