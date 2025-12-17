@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-dependency-graph}",
+            "name": "Debug swift-dependency-graph",
+            "target": "swift-dependency-graph",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug swift-dependency-graph"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-dependency-graph}",
+            "name": "Release swift-dependency-graph",
+            "target": "swift-dependency-graph",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release swift-dependency-graph"
+        }
+    ]
+}

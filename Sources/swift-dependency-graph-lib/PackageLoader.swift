@@ -10,6 +10,8 @@ import NIO
 import Workspace
 import PackageLoading
 import PackageModel
+import TSCBasic
+import TSCUtility
 
 enum PackageLoaderError : Error {
     case invalidUrl
@@ -136,7 +138,7 @@ class PackageLoader {
 
     func getDefaultBranch(url: String) -> Future<String> {
         return threadPool.runIfActive(eventLoop: eventLoopGroup.next()) { ()->String in
-            guard let lsRemoteOutput = try? Process.checkNonZeroExit(
+            guard let lsRemoteOutput = try? TSCBasic.Process.checkNonZeroExit(
                 args: Git.tool, "ls-remote", "--symref", url, "HEAD", environment: Git.environment).spm_chomp() else {return "master"}
             // split into tokens separated by space. The second token is the branch ref.
             let branchRefTokens = lsRemoteOutput.components(separatedBy: CharacterSet.whitespacesAndNewlines)
@@ -178,7 +180,7 @@ class PackageLoader {
                             return nil
                         }
                     }
-                    if let version = Version(string: cleanVersionString) {
+                    if let version = Version(cleanVersionString) {
                         return (version, versionString)
                     }
                     return nil
@@ -231,12 +233,12 @@ class PackageLoader {
 
 public class PackageManifestLoader {
     
-    let resources: UserManifestResources
+    let toolchain: UserToolchain
     let loader: ManifestLoader
     
     public init() throws {
-        self.resources = try UserManifestResources(swiftCompiler: swiftCompiler, swiftCompilerFlags: [])
-        self.loader = ManifestLoader(manifestResources: resources)
+        self.toolchain = try UserToolchain(destination: .hostDestination())
+        self.loader = ManifestLoader(toolchain: toolchain)
     }
     
     // We will need to know where the Swift compiler is.
@@ -247,7 +249,7 @@ public class PackageManifestLoader {
         #else
         string = try! Process.checkNonZeroExit(args: "which", "swiftc").spm_chomp()
         #endif
-        return AbsolutePath(string)
+        return try! AbsolutePath(validating: string)
     }()
 
     public func load(_ buffer: [UInt8], url: String, on eventLoop: EventLoop) -> EventLoopFuture<[String]> {
@@ -257,10 +259,10 @@ public class PackageManifestLoader {
         print("Loading manifest from \(url)")
         
         do {
-            try fs.createDirectory(AbsolutePath("/Package"))
-            try fs.writeFileContents(AbsolutePath("/Package/Package.swift"), bytes: ByteString(buffer))
+            try fs.createDirectory(try AbsolutePath(validating: "/Package"))
+            try fs.writeFileContents(try AbsolutePath(validating: "/Package/Package.swift"), bytes: ByteString(buffer))
 
-            var toolsVersion = try ToolsVersionLoader().load(at: AbsolutePath("/Package/"), fileSystem: fs)
+            var toolsVersion = try ToolsVersionParser.parse(manifestPath: AbsolutePath(validating: "/Package/"), fileSystem: fs)
             if toolsVersion < ToolsVersion.minimumRequired {
                 print("error: Package version is below minimum, trying minimum")
                 toolsVersion = .minimumRequired
